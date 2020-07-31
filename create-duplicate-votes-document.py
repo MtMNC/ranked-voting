@@ -4,7 +4,7 @@ import csv
 
 def create_duplicate_votes_document(voters, document_file_name, verbose=True):
     """
-    Takes a dictionary of voters prepared by get_voters_from_spreadsheet.
+    Take a dictionary of voters prepared by get_voters_from_spreadsheet.
     Output all of the duplicate voters (voters who assigned multiple entries the same rank),
     along with their duplicate votes, to the given text file.
     Each line of the text file follows this format:
@@ -26,9 +26,9 @@ def create_duplicate_votes_document(voters, document_file_name, verbose=True):
 
 def get_voters_from_spreadsheet(spreadsheet_file_name, verbose=True):
     """
-    Grabs voter data from the given spreadsheet
+    Grab voter data from the given spreadsheet
     (prepared by create_spreadsheet_from_voter_dictionary in create-voter-spreadsheet.py)
-    and returns it in a dictionary.
+    and return it in a dictionary.
     Each dictionary key is a username, and its value is a Voter representing that user that has
     been populated with all of that user's votes.
     """
@@ -42,6 +42,7 @@ def get_voters_from_spreadsheet(spreadsheet_file_name, verbose=True):
         header = next(reader)
         entry_names = header[1:]
 
+        # key is username, value is Voter populated with that user's votes
         voters = {}
         for row in reader:
             username = row[0]
@@ -51,7 +52,9 @@ def get_voters_from_spreadsheet(spreadsheet_file_name, verbose=True):
 
             for i, user_rank in enumerate(user_rankings):
                 if user_rank:
-                    voter.add_vote(entry_names[i], user_rank)
+                    # the ranks are stored in user_rankings as a list of strings, so cast them to
+                    # ints for use as indexes
+                    voter.rank(entry_names[i], int(user_rank))
 
             voters[username] = voter
 

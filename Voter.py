@@ -1,45 +1,53 @@
 class Voter():
     """
-    A Voter is identified by their username.
+    A Voter is identified by their name.
     They can vote for (assign rankings to) contest entries.
     """
+
 
     # how many distinct entries each Voter can vote for
     # (in other words, the number of distinct rankings the user can assign)
     ALLOWED_VOTE_COUNT = 3
 
 
-    def __init__(self, username):
-        self.username = username
+    def __init__(self, name):
+        self.name = name
+        # Store votes in a list (indexed by ranking) to easily construct the iterator later on.
         # For readability, self._votes[i] contains those entries that the Voter has assigned
         # ranking i.
         # Note that arrays are indexed from 0, but rankings are indexed from 1.
         # So, we make the array one element bigger than it needs to be and pretend the array is
         # indexed from 1, ignoring index 0.
-        self._votes = [[] for _ in range(Voter.ALLOWED_VOTE_COUNT + 1)]
+        self._votes_by_ranking = [[] for _ in range(Voter.ALLOWED_VOTE_COUNT + 1)]
+        # Also store votes in a dictionary (keyed by entry) to easily find entry's ranks later on.
+        self._votes_by_entry = {}
 
 
-    def add_vote(self, entry, ranking):
+    def rank(self, entry, ranking):
         """
         Vote for (assign the given ranking to) the given entry.
-        Note duplicate votes can occur (multiple entries can be given the same ranking).
+        Note duplicate votes can occur (multiple entries can be given the same ranking), but
+        multiple rankings cannot be assigned to the same entry.
         """
 
-        self._votes[int(ranking)].append(entry)
+        self._votes_by_ranking[ranking].append(entry)
+        self._votes_by_entry[entry] = ranking
 
 
-    def get_all_votes(self):
+    def get_entries_with_ranking(ranking):
         """
-        Return a list representing all of the Voter's votes.
-        Index i contains those entries that the Voter has assigned ranking i.
-        Note that index 0 is empty, since no entries are assigned ranking 0.
+        Return a list of the Entries with the given rank.
         """
 
-        return self._votes
+        return self._votes_by_ranking[ranking]
 
 
-    def __repr__(self):
-        return "[Voter: username=" + self.username + ", votes=" + str(self.get_all_votes()) + "]"
+    def get_ranking_of_entry(entry):
+        """
+        Return the ranking of the given Entry.
+        """
+
+        return self._votes_by_entry[entry]
 
 
     def get_duplicate_votes(self):
@@ -53,8 +61,30 @@ class Voter():
 
         duplicate_votes = {}
 
-        for ranking, entries in enumerate(self._votes):
+        for ranking, entries in enumerate(self._votes_by_ranking):
             if len(entries) > 1:
                 duplicate_votes[ranking] = entries
 
         return duplicate_votes
+
+
+    def __iter__(self):
+        """
+        Iterator over the Entries that the Voter gave valid votes to, sorted from the Voter's
+        favorite to least favorite.
+
+        If multiple entries share the same rank, then those entries are skipped.
+        """
+
+        # only iterate over those ranks that were assigned to exactly 1 entry
+        self._valid_votes = iter([entries_with_given_ranking[0] for entries_with_given_ranking
+            in self._valid_votes if len(entries_with_given_ranking) == 1])
+        return self
+
+
+    def __next__(self):
+        """
+        Return the Voter's next favorite vote.
+        """
+
+        return next(self._valid_votes)
