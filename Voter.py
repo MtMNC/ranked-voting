@@ -53,9 +53,9 @@ class Voter():
     def get_duplicate_votes(self):
         """
         Return a dictionary representing all of the user's duplicate votes (when the Voter assigned
-        the same ranking to multiple entries).
+        the same ranking to multiple Entries).
         Each key is a ranking that the user assigned duplicates of, and each value is a list of
-        entries that received that key's ranking.
+        Entry names that received that key's ranking.
         Returns None if the user has no duplicate votes.
         """
 
@@ -63,7 +63,7 @@ class Voter():
 
         for ranking, entries in enumerate(self._votes_by_ranking):
             if len(entries) > 1:
-                duplicate_votes[ranking] = entries
+                duplicate_votes[ranking] = [entry.name for entry in entries]
 
         return duplicate_votes
 
@@ -78,7 +78,7 @@ class Voter():
 
         # only iterate over those ranks that were assigned to exactly 1 entry
         self._valid_votes = iter([entries_with_given_ranking[0] for entries_with_given_ranking
-            in self._valid_votes if len(entries_with_given_ranking) == 1])
+            in self._votes_by_ranking if len(entries_with_given_ranking) == 1])
         return self
 
 

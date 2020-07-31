@@ -56,9 +56,13 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
             option_names[option["id"]] = option["html"]
 
 
-        # grab the users who voted for each option, in batches of size POLL_API_MAX_USER_LIMIT
-        # at a time (that's the upper limit batch size enforced by the API)
-        max_num_votes_to_collect = max([option["votes"] for option in poll["options"]])  # the most votes that any of the poll's options received
+        # Grab the users who voted for each option, in batches of size POLL_API_MAX_USER_LIMIT
+        # at a time (that's the upper limit batch size enforced by the API).
+
+        # the most votes that any of the poll's options received
+        max_num_votes_to_collect = max([option["votes"] for option in poll["options"]])
+        # the amount of API requests it takes to gather max_num_votes_to_collect votes in batches of
+        # size POLL_API_MAX_USER_LIMIT
         num_api_requests = math.ceil(max_num_votes_to_collect / NUM_VOTES_PER_API_REQUEST)
 
         if verbose:

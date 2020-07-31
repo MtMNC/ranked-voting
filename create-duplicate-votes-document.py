@@ -1,10 +1,11 @@
+from Contest import Contest
 from Voter import Voter
 
 import csv
 
-def create_duplicate_votes_document(voters, document_file_name, verbose=True):
+def create_duplicate_votes_document(contest, document_file_name, verbose=True):
     """
-    Take a dictionary of voters prepared by get_voters_from_spreadsheet.
+    Take a Contest populated with Voters and Entries.
     Output all of the duplicate voters (voters who assigned multiple entries the same rank),
     along with their duplicate votes, to the given text file.
     Each line of the text file follows this format:
@@ -15,10 +16,11 @@ def create_duplicate_votes_document(voters, document_file_name, verbose=True):
         print("Writing duplicate vote data to " + document_file_name + "...", end="", flush=True)
 
     with open(document_file_name, "w") as document:
-        for username in voters.keys():
-            duplicate_votes = voters[username].get_duplicate_votes()
+        for voter in contest.voters:
+            duplicate_votes = voter.get_duplicate_votes()
+
             if duplicate_votes:
-                print(username + ": " + str(duplicate_votes), file=document)
+                print(voter.name + ": " + str(duplicate_votes), file=document)
 
     if verbose:
         print(" done.")
@@ -67,8 +69,12 @@ def get_voters_from_spreadsheet(spreadsheet_file_name, verbose=True):
 def main():
     spreadsheet_file_name = input("Enter the path to the voting data spreadsheet: ")
     document_file_name = input("Enter the desired path to the duplicate votes document: ")
-    voters = get_voters_from_spreadsheet(spreadsheet_file_name)
-    create_duplicate_votes_document(voters, document_file_name)
+
+    contest = Contest()
+    contest.populate_from_spreadsheet(spreadsheet_file_name)
+
+    # voters = get_voters_from_spreadsheet(spreadsheet_file_name)
+    create_duplicate_votes_document(contest, document_file_name)
 
 
 if __name__ == "__main__":
