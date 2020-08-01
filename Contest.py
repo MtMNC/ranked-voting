@@ -280,7 +280,7 @@ class Contest():
 
         # pick the surplus Voters at random from among the winner's Voters
         num_surplus_voters = num_votes_for_top_entry_still_in_race - self._min_num_votes_to_win
-        surplus_voters = random.choices(winner.voters, k=num_surplus_voters)
+        surplus_voters = random.sample(winner.voters, k=num_surplus_voters)
 
         self._entries_still_in_race.remove(winner)
         self._winners.append(winner)
