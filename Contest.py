@@ -19,8 +19,8 @@ class Contest():
     NUM_CHARS_IN_ROUND = 100
     # title of the spreadsheet column containing Voters who didn't cast any valid votes
     INVALID_VOTER_COLUMN_NAME = "voters who didn't cast any valid votes"
-    # title of the spreadsheet column containing Voters whose preferred entries have all lost
-    ELIMINATED_VOTER_COLUMN_NAME = "voters whose preferred entries have all been eliminated"
+    # title of the spreadsheet column containing Voters whose preferred entries can't receive votes
+    ELIMINATED_VOTER_COLUMN_NAME = "voters who stopped as all their remaining picks left the race"
 
 
     def __init__(self, verbose=True):
