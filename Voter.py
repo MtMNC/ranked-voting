@@ -34,7 +34,7 @@ class Voter():
         self._votes_by_entry[entry] = ranking
 
 
-    def get_entries_with_ranking(ranking):
+    def get_entries_with_ranking(self, ranking):
         """
         Return a list of the Entries with the given rank.
         """
@@ -42,7 +42,7 @@ class Voter():
         return self._votes_by_ranking[ranking]
 
 
-    def get_ranking_of_entry(entry):
+    def get_ranking_of_entry(self, entry):
         """
         Return the ranking of the given Entry.
         """
@@ -70,8 +70,8 @@ class Voter():
 
     def __iter__(self):
         """
-        Iterator over the Entries that the Voter gave valid votes to, sorted from the Voter's
-        favorite to least favorite.
+        Iterator over the Entries still in the running that the Voter gave valid votes to,
+        sorted from the Voter's favorite to least favorite.
 
         If multiple entries share the same rank, then those entries are skipped.
         """
@@ -84,7 +84,12 @@ class Voter():
 
     def __next__(self):
         """
-        Return the Voter's next favorite vote.
+        Return the Voter's next favorite Entry that's still in the race, or None if none remain.
         """
 
-        return next(self._valid_votes)
+        next_favorite_entry = next(self._valid_votes, None)
+
+        while not ((next_favorite_entry is None) or (next_favorite_entry.still_in_race)):
+            next_favorite_entry = next(self._valid_votes, None)
+
+        return next_favorite_entry
