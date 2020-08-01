@@ -91,7 +91,9 @@ class Voter():
 
         next_favorite_entry = next(self._valid_votes, None)
 
-        while not ((next_favorite_entry is None) or (next_favorite_entry.still_in_race)):
+        # skip over Entries that have left the race already until we're either out of entries,
+        # or we encounter one that is still in the race
+        while not ((next_favorite_entry is None) or next_favorite_entry.still_in_race):
             next_favorite_entry = next(self._valid_votes, None)
 
         return next_favorite_entry

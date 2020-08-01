@@ -1,3 +1,5 @@
+(this is out of date)
+
 # Introduction
 
 These scripts help users run [instant-runoff voting](https://en.wikipedia.org/wiki/Instant-runoff_voting) in a [Discourse forum](https://www.discourse.org) using Discourse's standard poll system.
