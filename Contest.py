@@ -258,11 +258,10 @@ class Contest():
             print("* all voters voted for their top choice")
 
 
-    def _run_winning_round(self, num_votes_for_top_entry_still_in_race):
+    def _run_winner_declaration_round(self, undeclared_winners):
         """
-        Run a "winning" round of the contest. In this round, a most popular Entry is marked as a
-        winner and removed from the race. If this does not end the contest, then its surplus Voters
-        vote for their next choice.
+        Run a "winner declaration" round of the contest. In this round, all Entries tied for the
+        most votes that haven't won yet are marked as winners.
         """
 
         if self.verbose:
@@ -273,40 +272,46 @@ class Contest():
             entry.num_voters_gained_in_current_round = 0
         self._num_voters_exhausted_in_current_round = 0
 
-        # pick a winner at random out of all the top vote-getters
-        top_entries_still_in_race = [entry for entry in self._entries_still_in_race
-            if len(entry.voters) == num_votes_for_top_entry_still_in_race]
-        winner = random.choice(top_entries_still_in_race)
+        for winner in undeclared_winners:
+            self._entries_still_in_race.remove(winner)
+            self._winners.append(winner)
+            winner.has_won = True
+            if self.verbose:
+                print("* " + winner.name + " won (earned " + str(len(winner.voters)) \
+                    + " votes, needed " + str(self._min_num_voters_to_win) + ")")
 
-        # pick the surplus Voters at random from among the winner's Voters
-        num_surplus_voters = num_votes_for_top_entry_still_in_race - self._min_num_votes_to_win
-        surplus_voters = random.sample(winner.voters, k=num_surplus_voters)
 
-        self._entries_still_in_race.remove(winner)
-        self._winners.append(winner)
-        winner.has_won = True
+    def _run_winner_reallocation_round(self, declared_winners_still_with_surplus):
+        """
+        Run a "winner reallocation" round of the contest. In this round, one of the winning Entries
+        that hasn't reallocated its Voters is selected at random and reallocates its Voters.
+        """
 
         if self.verbose:
-            print("* " + winner.name + " won (earned " + str(len(winner.voters)) \
-                + " votes, needed " + str(self._min_num_votes_to_win) + ")")
+            self._print_round_name()
 
-        # reallocate the winner's voters if the contest still needs to continue
-        if len(self._winners) < self._num_winners:
-            self._reallocate_voters(winner, surplus_voters)
-            if self.verbose:
-                print("* only " + str(len(self._winners)) + "/" + str(self._num_winners) \
-                    + " winners have been found, so " + winner.name \
-                    + " reallocated its " + str(num_surplus_voters) + " surplus votes")
-        else:
-            if self.verbose:
-                print("* all " + str(len(self._winners)) + "/" + str(self._num_winners) \
-                    + " winners have been found, so the contest is over")
+        # entries have not yet gained any votes this round
+        for entry in self.entries:
+            entry.num_voters_gained_in_current_round = 0
+        self._num_voters_exhausted_in_current_round = 0
+
+        winner = random.choice(declared_winners_still_with_surplus)
+        num_surplus_voters = len(winner.voters) - self._min_num_voters_to_win
+        surplus_voters = random.sample(winner.voters, k=num_surplus_voters)
+
+        self._reallocate_voters(winner, surplus_voters)
 
 
-    def _run_losing_round(self, num_votes_for_bottom_entry_still_in_race):
+        if self.verbose:
+            print("* only " + str(len(self._winners)) + "/" + str(self._num_winners) \
+                + " winners have been found, so winner " + winner.name \
+                + " reallocated its " + str(num_surplus_voters) + " surplus votes")
+
+
+    def _run_elimination_round(self):
         """
-        Run a "losing" round of the contest. In this round, a least popular Entry is removed from
-        the race, and its Voters vote for their next choice.
+        Run an elimination round of the Contest. In this round, a least popular Entry is removed
+        from the race, and its Voters vote for their next choice.
         """
 
         if self.verbose:
@@ -318,20 +323,23 @@ class Contest():
         self._num_voters_exhausted_in_current_round = 0
 
         # pick a loser at random out of all the bottom vote-getters
+        num_voters_for_bottom_entry_still_in_race = min([len(entry.voters)
+            for entry in self._entries_still_in_race])
         bottom_entries_still_in_race = [entry for entry in self._entries_still_in_race
-            if len(entry.voters) == num_votes_for_bottom_entry_still_in_race]
+            if len(entry.voters) == num_voters_for_bottom_entry_still_in_race]
         loser = random.choice(bottom_entries_still_in_race)
 
         if self.verbose:
             print("* " + loser.name + " was eliminated as it had the fewest votes (" \
-                + str(len(loser.voters)) + ")")
+                + str(num_voters_for_bottom_entry_still_in_race) + ")")
 
         self._entries_still_in_race.remove(loser)
         loser.has_lost = True
         self._reallocate_voters(loser, loser.voters)
 
         if self.verbose:
-            print("* " + loser.name + " reallocated its votes")
+            print("* " + loser.name + " reallocated its " \
+            + str(num_voters_for_bottom_entry_still_in_race) + " votes")
 
 
     def get_winners(self, num_winners, output_file_name_prefix):
@@ -373,32 +381,36 @@ class Contest():
         # no way for w other Entries to perform equally well, as that would imply at least
         # (w+1) * ((v/(w+1)) + 1) = v + w + 1 votes were cast, and that's more than v votes.
         self._num_valid_voters = len(self.voters) - len(self._voters_with_no_valid_votes)
-        self._min_num_votes_to_win = math.floor(self._num_valid_voters / (self._num_winners + 1)) + 1
+        self._min_num_voters_to_win = math.floor(self._num_valid_voters / (self._num_winners + 1)) + 1
 
         self._write_current_round_to_spreadsheet(output_file_name_prefix)
         if self.verbose:
             self._print_chart_to_console()
 
         while len(self._winners) < self._num_winners:
-            # In each subsequent round, either a new winning Entry is removed and its surplus
-            # Voters are reallocated, or a new losing Entry is removed and all its Voters are
-            # reallocated.
-            # Either way, exactly one Entry gets removed from the race in each round.
-
             self._round_number += 1
 
-            num_votes_for_top_entry_still_in_race = max([len(entry.voters)
-                for entry in self._entries_still_in_race])
+            undeclared_winners = [entry for entry in self._entries_still_in_race
+                if len(entry.voters) >= self._min_num_voters_to_win and not entry.has_won]
 
-            if num_votes_for_top_entry_still_in_race >= self._min_num_votes_to_win:
-                # a winner is in the race; remove one from the race
-                self._run_winning_round(num_votes_for_top_entry_still_in_race)
+            declared_winners_still_with_surplus = [winner for winner in self._winners
+                if len(winner.voters) > self._min_num_voters_to_win]
+
+            if undeclared_winners:
+                # declare all new winners
+                self._run_winner_declaration_round(undeclared_winners)
+            elif declared_winners_still_with_surplus:
+                # There are no new winners, but some existing winners' Voters have not been
+                # redistributed yet. Move one of those winner's surplus votes.
+                # Conducting the reallocations after marking all winners reduces the amount of
+                # wasted votes. If, say, entry 1 and entry 2 both won in the same round, then the
+                # surplus votes of entry 1 will not move to entry 2 (since entry 2 was removed from
+                # the race already).
+                self._run_winner_reallocation_round(declared_winners_still_with_surplus)
             else:
-                # there are no winners in the race;
+                # there are no winners in the race, and all winners votes have been reallocated;
                 # remove one of the last-place entries from the race
-                num_votes_for_bottom_entry_still_in_race = min([len(entry.voters)
-                    for entry in self._entries_still_in_race])
-                self._run_losing_round(num_votes_for_bottom_entry_still_in_race)
+                self._run_elimination_round()
 
             self._write_current_round_to_spreadsheet(output_file_name_prefix)
             if self.verbose:
@@ -409,10 +421,10 @@ class Contest():
             # (situations like this can happen if lots of Voters have exhausted their ballots)
             if len(self._entries_still_in_race) + len(self._winners) == self._num_winners:
                 if self.verbose:
-                    print("* Because there are " + str(len(self._entries_still_in_race)) \
+                    print("* because there are " + str(len(self._entries_still_in_race)) \
                         + " entries left in the race and there are still " \
                         + str(self._num_winners - len(self._winners)) \
-                        + " winners left to find,\nthe remaining entries are crowned as winners.")
+                        + " winners left to find,\nthe remaining entries are crowned as winners")
                 for entry_still_in_race in self._entries_still_in_race:
                     self._winners.append(entry_still_in_race)
                     entry_still_in_race.has_won = True
@@ -420,5 +432,7 @@ class Contest():
 
         if self.verbose:
             print()
+            print("* all " + str(len(self._winners)) + "/" + str(self._num_winners) \
+                + " winners have been found, so the contest is over")
             print("WINNERS: " + str([winner.name for winner in self._winners]))
         return self._winners

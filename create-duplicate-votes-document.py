@@ -67,7 +67,7 @@ def get_voters_from_spreadsheet(spreadsheet_file_name, verbose=True):
 
 
 def main():
-    spreadsheet_file_name = input("Enter the path to the voting data spreadsheet: ")
+    spreadsheet_file_name = input("Enter the path to the voting data spreadsheet (made by create-voter-spreadsheet.py): ")
     document_file_name = input("Enter the desired path to the duplicate votes document: ")
 
     contest = Contest()

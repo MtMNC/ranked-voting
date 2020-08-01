@@ -14,6 +14,7 @@ class Entry:
         self.has_lost = False
         self.num_voters_gained_in_current_round = 0
 
+
     @property
     def still_in_race(self):
         return not (self.has_won or self.has_lost)
