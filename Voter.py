@@ -21,6 +21,8 @@ class Voter():
         self._votes_by_ranking = [[] for _ in range(Voter.ALLOWED_VOTE_COUNT + 1)]
         # Also store votes in a dictionary (keyed by entry) to easily find entry's ranks later on.
         self._votes_by_entry = {}
+        # the round when the Voter was last allocated to a new Entry
+        self.round_when_last_moved = 0
 
 
     def rank(self, entry, ranking):
