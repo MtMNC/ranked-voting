@@ -45,7 +45,7 @@ class Contest():
             print("Populating contest with voter data from " + input_file_name + "...",
                 end="", flush=True)
 
-        with open(input_file_name, "r") as spreadsheet:
+        with open(input_file_name, "r", newline="") as spreadsheet:
             reader = csv.reader(spreadsheet, delimiter=",")
 
             header = next(reader)
@@ -97,7 +97,7 @@ class Contest():
             print("Writing round " + str(self._round_number) + " vote data to " \
                 + input_file_name + "...", end="", flush=True)
 
-        with open(input_file_name, "w") as spreadsheet:
+        with open(input_file_name, "w", newline="") as spreadsheet:
             writer = csv.writer(spreadsheet, delimiter=",")
 
             header = [Contest.INVALID_VOTER_COLUMN_NAME, Contest.ELIMINATED_VOTER_COLUMN_NAME] + \

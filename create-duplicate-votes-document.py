@@ -15,7 +15,7 @@ def create_duplicate_votes_document(contest, document_file_name, verbose=True):
     if verbose:
         print("Writing duplicate vote data to " + document_file_name + "...", end="", flush=True)
 
-    with open(document_file_name, "w") as document:
+    with open(document_file_name, "w", newline="") as document:
         for voter in contest.voters:
             duplicate_votes = voter.get_duplicate_votes()
 
@@ -38,7 +38,7 @@ def get_voters_from_spreadsheet(spreadsheet_file_name, verbose=True):
     if verbose:
         print("Reading voter data from " + spreadsheet_file_name + "...", end="", flush=True)
 
-    with open(spreadsheet_file_name, "r") as spreadsheet:
+    with open(spreadsheet_file_name, "r", newline="") as spreadsheet:
         reader = csv.reader(spreadsheet, delimiter=",")
 
         header = next(reader)

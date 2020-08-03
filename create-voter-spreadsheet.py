@@ -112,7 +112,7 @@ def create_spreadsheet_from_voter_dictionary(polls, votes, spreadsheet_file_name
     if verbose:
         print("Writing data to " + spreadsheet_file_name + "...", end="", flush=True)
 
-    with open(spreadsheet_file_name, "w") as spreadsheet:
+    with open(spreadsheet_file_name, "w", newline="") as spreadsheet:
         writer = csv.writer(spreadsheet, delimiter=",")
 
         writer.writerow(["user"] + [poll["name"] for poll in polls])
