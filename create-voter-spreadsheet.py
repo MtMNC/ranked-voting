@@ -26,7 +26,9 @@ def get_poll_data_from_post(post_id, api_headers, verbose=True):
 
     if verbose:
         print("Fetching poll data from " + post_url + "....", end="", flush=True)
+
     polls = requests.get(post_url, headers=api_headers).json()["polls"]
+
     if verbose:
         print(" done." )
         print("Found " + str(len(polls)) + " polls in post " + str(post_id) + "." )
@@ -37,11 +39,13 @@ def get_poll_data_from_post(post_id, api_headers, verbose=True):
 def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
     """
     Grab the voter data from all of the given poll data (produced by get_poll_data_from_post).
-    Return the data as a dictionary where each key is a username and each value is a list of
-    that user's votes.
-    Each vote is stored as a dict where the key is a poll name and the value is the option that
-    the user voted for.
-    NOTE: This method assumes each voter vote for at most one option per poll.
+    Return the data as a dictionary of user votes keyed by username.
+    Each vote is a dictionary of rankings (numbers) keyed by entry name.
+    So, the output follows this format:
+    output[username][entry_name] = ranking
+
+    NOTE: This method assumes that each poll corresponds to a particular ranking and that entries
+    are listed in the same order across all polls.
     """
 
     if verbose:
@@ -51,10 +55,18 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
 
     for poll_index, poll in enumerate(polls):
 
-        option_names = {}
-        for option in poll["options"]:
-            option_names[option["id"]] = option["html"]
+        # In the i-th poll (indexed from 1), users vote for which entry should get ranking i.
+        # For instance, in the 3st poll users assign ranking 3 to an entry (users pick their
+        # 3rd-favorite entry).
+        ranking = poll_index + 1
 
+        # In each poll, users select one entry. Each option in the poll corresponds to a particular
+        # entry.
+        # entry_names_keyed_by_id contains the names of the contest entries, each keyed by the id of
+        # their option in this particular poll.
+        entry_names_keyed_by_id = {}
+        for option in polls[0]["options"]:
+            entry_names_keyed_by_id[option["id"]] = option["html"]
 
         # Grab the users who voted for each option, in batches of size POLL_API_MAX_USER_LIMIT
         # at a time (that's the upper limit batch size enforced by the API).
@@ -66,7 +78,8 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
         num_api_requests = math.ceil(max_num_votes_to_collect / NUM_VOTES_PER_API_REQUEST)
 
         if verbose:
-            print("\tPoll " + poll["name"] + " (" + str(poll_index + 1) + "/" + str(len(polls)) + ")")
+            print("\tPoll " + poll["name"] + " (" + str(poll_index + 1) + "/" + str(len(polls)) \
+                + ")")
 
         for i in range(num_api_requests):
             vote_batch_url = "https://board.ttvchannel.com/polls/voters.json" \
@@ -74,6 +87,7 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
                             + "&poll_name=" + poll["name"] \
                             + "&limit=" + str(NUM_VOTES_PER_API_REQUEST) \
                             + "&page=" + str(i + 1)
+
             if verbose:
                 print("\t\tFetching vote data from " + vote_batch_url + "...", end="", flush=True)
 
@@ -83,11 +97,14 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
                 print(" processing data...", end="", flush=True)
 
             for option_id, users in vote_batch.items():
-                for user in users:
-                    if user["username"] not in votes:
-                        votes[user["username"]] = {}
+                entry_name = entry_names_keyed_by_id[option_id]
 
-                    votes[user["username"]][poll["name"]] = option_names[option_id]
+                for user in users:
+                    username = user["username"]
+                    if username not in votes:
+                        votes[username] = {}
+
+                    votes[username][entry_name] = ranking
 
             if verbose:
                 print(" done.")
@@ -97,6 +114,7 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
     if verbose:
         print("Done fetching and processing vote data.")
 
+    print(votes)
     return votes
 
 
@@ -104,25 +122,26 @@ def create_spreadsheet_from_voter_dictionary(polls, votes, spreadsheet_file_name
     """
     Given poll data from get_poll_data_from_post and a voter dictionary from
     create_spreadsheet_from_voter_dictionary,
-    construct a spreadsheet at the given path where every row is a user, every column is a poll
-    (contest entry),
-    and each cell represents which rank the row's user assigned to in the column's contest entry.
+    construct a spreadsheet at the given path where every row is a user, every column is a contest
+    entry, and each cell is the ranking that the row's user assigned to the column's contest entry.
     """
 
     if verbose:
         print("Writing data to " + spreadsheet_file_name + "...", end="", flush=True)
 
+    entry_names = [option["html"] for option in polls[0]["options"]]
+
     with open(spreadsheet_file_name, "w", newline="") as spreadsheet:
         writer = csv.writer(spreadsheet, delimiter=",")
 
-        writer.writerow(["user"] + [poll["name"] for poll in polls])
+        writer.writerow(["user"] + entry_names)
 
         for username in votes.keys():
             user_votes = []
-            for poll in polls:
-                if poll["name"] in votes[username]:
-                    # user voted in the poll
-                    user_votes.append(votes[username][poll["name"]])
+            for entry_name in entry_names:
+                if entry_name in votes[username]:
+                    # user voted in the poll; add its ranking
+                    user_votes.append(votes[username][entry_name])
                 else:
                     user_votes.append(None)
 
