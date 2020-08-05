@@ -15,28 +15,32 @@ NUM_VOTES_PER_API_REQUEST = 50
 SECONDS_BETWEEN_API_REQUESTS = 3
 
 
-def get_poll_data_from_post(post_id, api_headers, verbose=True):
+def get_poll_data_from_topic(topic_id, api_headers, verbose=True):
     """
     Grab data (poll names, option ids and names, vote counts, etc.) for all of the polls in the
-    given post.
+    first post of the given topic. Return the JSON represening the first post.
+
     Note this output does not include the actual users who voted in each poll.
     """
 
-    post_url = "https://board.ttvchannel.com/posts/" + post_id + ".json"
+    topic_url = "https://board.ttvchannel.com/t/" + topic_id + ".json"
 
     if verbose:
-        print("Fetching poll data from " + post_url + "....", end="", flush=True)
+        print("Fetching poll data from " + topic_url + "....", end="", flush=True)
 
-    polls = requests.get(post_url, headers=api_headers).json()["polls"]
+    topic = requests.get(topic_url, headers=api_headers).json()
+
+    first_post = topic["post_stream"]["posts"][0]
 
     if verbose:
         print(" done." )
-        print("Found " + str(len(polls)) + " polls in post " + str(post_id) + "." )
+        print("Found " + str(len(first_post["polls"])) + " polls in the first post of topic " \
+        + str(topic_id) + " (" + topic["title"] + ")." )
 
-    return polls
+    return first_post
 
 
-def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
+def create_voter_dictionary(post, api_headers, verbose=True):
     """
     Grab the voter data from all of the given poll data (produced by get_poll_data_from_post).
     Return the data as a dictionary of user votes keyed by username.
@@ -53,7 +57,7 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
 
     votes = {}
 
-    for poll_index, poll in enumerate(polls):
+    for poll_index, poll in enumerate(post["polls"]):
 
         # In the i-th poll (indexed from 1), users vote for which entry should get ranking i.
         # For instance, in the 3st poll users assign ranking 3 to an entry (users pick their
@@ -65,7 +69,7 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
         # entry_names_keyed_by_id contains the names of the contest entries, each keyed by the id of
         # their option in this particular poll.
         entry_names_keyed_by_id = {}
-        for option in polls[0]["options"]:
+        for option in poll["options"]:
             entry_names_keyed_by_id[option["id"]] = option["html"]
 
         # Grab the users who voted for each option, in batches of size POLL_API_MAX_USER_LIMIT
@@ -78,12 +82,12 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
         num_api_requests = math.ceil(max_num_votes_to_collect / NUM_VOTES_PER_API_REQUEST)
 
         if verbose:
-            print("\tPoll " + poll["name"] + " (" + str(poll_index + 1) + "/" + str(len(polls)) \
-                + ")")
+            print("\tPoll " + poll["name"] \
+                + " (" + str(poll_index + 1) + "/" + str(len(post["polls"])) + ")")
 
         for i in range(num_api_requests):
             vote_batch_url = "https://board.ttvchannel.com/polls/voters.json" \
-                            + "?post_id=" + post_id \
+                            + "?post_id=" + str(post["id"]) \
                             + "&poll_name=" + poll["name"] \
                             + "&limit=" + str(NUM_VOTES_PER_API_REQUEST) \
                             + "&page=" + str(i + 1)
@@ -114,11 +118,10 @@ def create_voter_dictionary(post_id, api_headers, polls, verbose=True):
     if verbose:
         print("Done fetching and processing vote data.")
 
-    print(votes)
     return votes
 
 
-def create_spreadsheet_from_voter_dictionary(polls, votes, spreadsheet_file_name, verbose=True):
+def create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name, verbose=True):
     """
     Given poll data from get_poll_data_from_post and a voter dictionary from
     create_spreadsheet_from_voter_dictionary,
@@ -129,7 +132,7 @@ def create_spreadsheet_from_voter_dictionary(polls, votes, spreadsheet_file_name
     if verbose:
         print("Writing data to " + spreadsheet_file_name + "...", end="", flush=True)
 
-    entry_names = [option["html"] for option in polls[0]["options"]]
+    entry_names = [option["html"] for option in post["polls"][0]["options"]]
 
     with open(spreadsheet_file_name, "w", newline="") as spreadsheet:
         writer = csv.writer(spreadsheet, delimiter=",")
@@ -157,11 +160,11 @@ def main():
 
     api_headers = {"Api-Key": api_key, "Api_Username": api_username}
 
-    post_id = input("Enter the post's id: ")
-    spreadsheet_file_name = "raw-vote-data-post-" + post_id + ".csv"
-    polls = get_poll_data_from_post(post_id, api_headers)
-    votes = create_voter_dictionary(post_id, api_headers, polls)
-    create_spreadsheet_from_voter_dictionary(polls, votes, spreadsheet_file_name)
+    topic_id = input("Enter the topic's id: ")
+    spreadsheet_file_name = "raw-vote-data-post-" + topic_id + ".csv"
+    post = get_poll_data_from_topic(topic_id, api_headers)
+    votes = create_voter_dictionary(post, api_headers)
+    create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name)
 
 
 if __name__ == "__main__":
