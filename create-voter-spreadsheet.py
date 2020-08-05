@@ -161,7 +161,7 @@ def main():
     api_headers = {"Api-Key": api_key, "Api_Username": api_username}
 
     topic_id = input("Enter the topic's id: ")
-    spreadsheet_file_name = "raw-vote-data-post-" + topic_id + ".csv"
+    spreadsheet_file_name = "raw-vote-data-topic-" + topic_id + ".csv"
     post = get_poll_data_from_topic(topic_id, api_headers)
     votes = create_voter_dictionary(post, api_headers)
     create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name)
