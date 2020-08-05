@@ -50,6 +50,12 @@ class Contest():
 
             header = next(reader)
             entry_names = header[1:]
+            # If there n Entries, each voter can assign at most n distinct rankings.
+            # (Really the number of Entries may be more than the number of distinct rankings.
+            # For example, a poll could ask users to vote for the top 3 Entries out of 10.
+            # It's fine to overestimate the number of distinct rankings though. It'll just lead to
+            # some wasted space in each Voter, which doesn't really matter.)
+            num_distinct_rankings = len(entry_names)
 
             # construct Entries
             for entry_name in entry_names:
@@ -63,7 +69,7 @@ class Contest():
                 # voter_rankings[i] contains the voter's ranking for entry self.entries[i]
                 voter_rankings = row[1:]
 
-                voter = Voter(voter_name)
+                voter = Voter(voter_name, num_distinct_rankings)
 
                 for i, ranking in enumerate(voter_rankings):
                     if ranking:

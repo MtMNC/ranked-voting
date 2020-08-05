@@ -5,12 +5,7 @@ class Voter():
     """
 
 
-    # how many distinct Entries each Voter can vote for
-    # (in other words, the number of distinct rankings the user can assign)
-    ALLOWED_VOTE_COUNT = 3
-
-
-    def __init__(self, name):
+    def __init__(self, name, num_distinct_rankings):
         self.name = name
         # Store votes in a list (indexed by ranking) to easily construct the iterator later on.
         # For readability, self._votes[i] contains those Entries that the Voter has assigned
@@ -18,7 +13,7 @@ class Voter():
         # Note that arrays are indexed from 0, but rankings are indexed from 1.
         # So, we make the array one element bigger than it needs to be and pretend the array is
         # indexed from 1, ignoring index 0.
-        self._votes_by_ranking = [[] for _ in range(Voter.ALLOWED_VOTE_COUNT + 1)]
+        self._votes_by_ranking = [[] for _ in range(num_distinct_rankings + 1)]
         # Also store votes in a dictionary (keyed by entry) to easily find Entry's ranks later on.
         self._votes_by_entry = {}
         # the round when the Voter was last allocated to a new Entry
