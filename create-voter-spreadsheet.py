@@ -50,6 +50,8 @@ def create_voter_dictionary(post, api_headers, verbose=True):
 
     NOTE: This method assumes that each poll corresponds to a particular ranking and that entries
     are listed in the same order across all polls.
+
+    NOTE: This method assumes that the poll for rank i is titled poll_i.
     """
 
     if verbose:
@@ -62,7 +64,8 @@ def create_voter_dictionary(post, api_headers, verbose=True):
         # In the i-th poll (indexed from 1), users vote for which entry should get ranking i.
         # For instance, in the 3st poll users assign ranking 3 to an entry (users pick their
         # 3rd-favorite entry).
-        ranking = poll_index + 1
+        # This assumes that the poll for ranking i has its name attribute set to poll_i.
+        ranking = int(poll["name"][5:])
 
         # In each poll, users select one entry. Each option in the poll corresponds to a particular
         # entry.
@@ -83,7 +86,8 @@ def create_voter_dictionary(post, api_headers, verbose=True):
 
         if verbose:
             print("\tPoll " + poll["name"] \
-                + " (" + str(poll_index + 1) + "/" + str(len(post["polls"])) + ")")
+                + " (poll " + str(poll_index + 1) + "/" + str(len(post["polls"])) \
+                + ", where users vote for ranking " + str(ranking) + ")")
 
         for i in range(num_api_requests):
             vote_batch_url = "https://board.ttvchannel.com/polls/voters.json" \

@@ -19,7 +19,7 @@ There are many variants of STV. Here are the details of this specific implementa
 
 ### Creating polls
 
-Set up one poll for each ranking in the contest. Each poll should contain options for every entry. Voters rank each entry by voting for one option in each poll. For example, if the contest has 10 entries and voters can vote for their favorite 3, then set up 3 polls representing rankings 1-3. Each poll should have 10 radio buttons, one for each entry. Voters should select their favorite entry in the ranking 1 poll, their second favorite entry in the ranking 2 poll, and their third favorite entry in the ranking 3 poll.
+Set up one poll for each ranking in the contest. Each poll should contain options for every entry. Voters rank each entry by voting for one option in each poll. For example, if the contest has 10 entries and voters can vote for their favorite 3, then set up 3 polls representing rankings 1-3. Each poll should have 10 radio buttons, one for each entry. Voters should select their favorite entry in the ranking 1 poll, their second favorite entry in the ranking 2 poll, and their third favorite entry in the ranking 3 poll. Note that the poll for ranking i should have its name attribute set to `poll_i`. (The polls should have those names by default if they are are ordered so the ranking 1 poll comes first.)
 
 ### Determining results
 
