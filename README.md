@@ -13,7 +13,7 @@ There are many variants of STV. Here are the details of this specific implementa
 * If multiple winners have surplus votes, then those votes are reallocated one winner at a time in random order (rather than all during one round).
 * If multiple entries are in last place during an elimination round, then those entries are eliminated one a time in random order (rather than all during one round).
 * Voters can only vote for entries that were still in the race (that had neither won nor been eliminated) as of the start of the current round.
-* If a voter assigned multiple rankings to the same entry, than only the top ranking counts.
+* If a voter assigned multiple rankings to the same entry, then only the top ranking counts.
 
 ## Instructions
 
