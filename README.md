@@ -27,7 +27,7 @@ Once the polls close, the scripts can help determine the results.
 
 #### Getting an API key
 
-`create-voter-spreadsheet.py` fetches data from the Discourse API, which requires appropriate credentials. Get an API key through the Discourse admin panel. Save it in a file called `api-credentials.txt` located in the same folder as `create-voter-spreadsheet.py`. The file should contain the API key, then a space, then the key's corresponding username, as shown below.
+`create_voter_spreadsheet.py` fetches data from the Discourse API, which requires appropriate credentials. Get an API key through the Discourse admin panel. Save it in a file called `api_credentials.txt` located in the same folder as `create_voter_spreadsheet.py`. The file should contain the API key, then a space, then the key's corresponding username, as shown below.
 
 ```
 key username
@@ -37,18 +37,18 @@ If you already have a voting data spreadsheet, then you do not need API credenti
 
 #### Downloading voting data
 
-Once you have saved your API token, you can download voting data by running `python create-voter-spreadsheet.py`.
+Once you have saved your API token, you can download voting data by running `python create_voter_spreadsheet.py`.
 
 When prompted, enter the id of the poll topic. (The topic id is the number in the topic's URL.) All of the polls should be in the topic's first post.
 
-The script will download the topic's voting data and save it in `raw-vote-data-topic-{TOPIC_ID}.csv`. Each row represents a user, and each column represents a contest entry. Each cell contains the ranking that the row's user assigned to the column's contest entry.
+The script will download the topic's voting data and save it in `raw_vote_data_topic_{TOPIC_ID}.csv`. Each row represents a user, and each column represents a contest entry. Each cell contains the ranking that the row's user assigned to the column's contest entry.
 
 All of the following steps pull voting data from this spreadsheet, not from the Discourse API. You can edit this spreadsheet to add, remove, or edit votes. Of course, with great power comes great responsibility.
 
 #### Identifying winners
 
-Once you have a voting data spreadsheet (made by `create-voter-spreadsheet.py`), you can find the contest's results.
+Once you have a voting data spreadsheet (made by `create_voter_spreadsheet.py`), you can find the contest's results.
 
-Run `python find-contest-winners.py`. When prompted, enter the path to the voting data spreadsheet. Next enter the prefix for the spreadsheet. (After each round, the script will write the current standings into `{PREFIX}{ROUND_NUMBER}.csv`.) Finally, enter the number of desired winners.
+Run `python find_contest_winners.py`. When prompted, enter the path to the voting data spreadsheet. Next enter the prefix for the spreadsheet. (After each round, the script will write the current standings into `{PREFIX}{ROUND_NUMBER}.csv`.) Finally, enter the number of desired winners.
 
 The script will simulate the contest. After each round, it will print out a description of the round and a bar chart of the contest's current standings. It will also print out the voting breakdowns of each round into `{PREFIX}{ROUND_NUMBER}.csv`. Each column in the spreadsheet represents an entry. Each cell represents a voter for that column's entry and lists the voter's name, the ranking they gave the entry, and the round when they voted for the entry. When the contest ends, the script prints the winners to the console.

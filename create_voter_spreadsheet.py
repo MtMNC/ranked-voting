@@ -14,6 +14,8 @@ NUM_VOTES_PER_API_REQUEST = 50
 # how long (in seconds) to wait between API requests (to stay on good terms with the website)
 SECONDS_BETWEEN_API_REQUESTS = 3
 
+# The URL from which to request vote info from Discourse
+DISCOURSE_VOTES_LOCATION = "https://board.ttvchannel.com/polls/voters.json"
 
 def get_poll_data_from_topic(topic_id, api_headers, verbose=True):
     """
@@ -26,7 +28,7 @@ def get_poll_data_from_topic(topic_id, api_headers, verbose=True):
     topic_url = "https://board.ttvchannel.com/t/" + topic_id + ".json"
 
     if verbose:
-        print("Fetching poll data from " + topic_url + "....", end="", flush=True)
+        print(f"Fetching poll data from {topic_url}....", end="", flush=True)
 
     topic = requests.get(topic_url, headers=api_headers).json()
 
@@ -34,8 +36,10 @@ def get_poll_data_from_topic(topic_id, api_headers, verbose=True):
 
     if verbose:
         print(" done." )
-        print("Found " + str(len(first_post["polls"])) + " polls in the first post of topic " \
-        + str(topic_id) + " (" + topic["title"] + ")." )
+        print(
+            f"Found {len(first_post['polls'])} polls"
+            f" in the first post of topic {topic_id} ({topic['title']})."
+        )
 
     return first_post
 
@@ -79,27 +83,31 @@ def create_voter_dictionary(post, api_headers, verbose=True):
         # at a time (that's the upper limit batch size enforced by the API).
 
         # the most votes that any of the poll's options received
-        max_num_votes_to_collect = max([option["votes"] for option in poll["options"]])
+        max_num_votes_to_collect = max(option["votes"] for option in poll["options"])
         # the amount of API requests it takes to gather max_num_votes_to_collect votes in batches of
         # size POLL_API_MAX_USER_LIMIT
         num_api_requests = math.ceil(max_num_votes_to_collect / NUM_VOTES_PER_API_REQUEST)
 
         if verbose:
-            print("\tPoll " + poll["name"] \
-                + " (poll " + str(poll_index + 1) + "/" + str(len(post["polls"])) \
-                + ", where users vote for ranking " + str(ranking) + ")")
+            print(
+                f"\tPoll {poll['name']} (poll {poll_index + 1}/{len(post['polls'])},"
+                f" where users vote for ranking {ranking})"
+            )
 
         for i in range(num_api_requests):
-            vote_batch_url = "https://board.ttvchannel.com/polls/voters.json" \
-                            + "?post_id=" + str(post["id"]) \
-                            + "&poll_name=" + poll["name"] \
-                            + "&limit=" + str(NUM_VOTES_PER_API_REQUEST) \
-                            + "&page=" + str(i + 1)
+            params = {
+                "post_id": post["id"],
+                "poll_name": poll["name"],
+                "limit": NUM_VOTES_PER_API_REQUEST,
+                "page": i + 1
+            }
 
             if verbose:
-                print("\t\tFetching vote data from " + vote_batch_url + "...", end="", flush=True)
+                print(f"\t\tFetching vote data from {DISCOURSE_VOTES_LOCATION}...",
+                    end="", flush=True)
 
-            vote_batch = requests.get(vote_batch_url, headers=api_headers).json()["voters"]
+            vote_batch = requests.get(DISCOURSE_VOTES_LOCATION,
+                headers=api_headers, params=params).json()["voters"]
 
             if verbose:
                 print(" processing data...", end="", flush=True)
@@ -134,7 +142,7 @@ def create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name,
     """
 
     if verbose:
-        print("Writing data to " + spreadsheet_file_name + "...", end="", flush=True)
+        print(f"Writing data to {spreadsheet_file_name}...", end="", flush=True)
 
     entry_names = [option["html"] for option in post["polls"][0]["options"]]
 
@@ -159,13 +167,13 @@ def create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name,
 
 
 def main():
-    with open("api-credentials.txt") as token_file:
+    with open("api_credentials.txt") as token_file:
         api_key, api_username = token_file.read().split()
 
     api_headers = {"Api-Key": api_key, "Api_Username": api_username}
 
     topic_id = input("Enter the topic's id: ")
-    spreadsheet_file_name = "raw-vote-data-topic-" + topic_id + ".csv"
+    spreadsheet_file_name = f"raw_vote_data_topic_{topic_id}.csv"
     post = get_poll_data_from_topic(topic_id, api_headers)
     votes = create_voter_dictionary(post, api_headers)
     create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name)

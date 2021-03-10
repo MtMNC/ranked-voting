@@ -1,5 +1,5 @@
-from Entry import Entry
-from Voter import Voter
+from entry import Entry
+from voter import Voter
 import csv
 import itertools
 import math
@@ -31,8 +31,9 @@ class Contest():
 
     def _print_round_name(self):
         print("#" * Contest.NUM_CHARS_IN_ROUND)
-        print((" ROUND " + str(self._round_number) + " ").center(Contest.NUM_CHARS_IN_ROUND, "#"))
+        print(f" ROUND {self._round_number} ".center(Contest.NUM_CHARS_IN_ROUND, "#"))
         print("#" * Contest.NUM_CHARS_IN_ROUND)
+
 
     def populate_from_spreadsheet(self, input_file_name):
         """
@@ -42,7 +43,7 @@ class Contest():
         """
 
         if self.verbose:
-            print("Populating contest with voter data from " + input_file_name + "...",
+            print(f"Populating contest with voter data from {input_file_name}...",
                 end="", flush=True)
 
         with open(input_file_name, "r", newline="") as spreadsheet:
@@ -100,14 +101,17 @@ class Contest():
         input_file_name = output_file_name_prefix + str(self._round_number) + ".csv"
 
         if self.verbose:
-            print("Writing round " + str(self._round_number) + " vote data to " \
-                + input_file_name + "...", end="", flush=True)
+            print(f"Writing round {self._round_number} vote data to {input_file_name}...",
+                end="", flush=True)
 
         with open(input_file_name, "w", newline="") as spreadsheet:
             writer = csv.writer(spreadsheet, delimiter=",")
 
-            header = [Contest.INVALID_VOTER_COLUMN_NAME, Contest.ELIMINATED_VOTER_COLUMN_NAME] + \
-                [entry.name for entry in self.entries]
+            header = [
+                Contest.INVALID_VOTER_COLUMN_NAME,
+                Contest.ELIMINATED_VOTER_COLUMN_NAME,
+                *[entry.name for entry in self.entries]
+            ]
             writer.writerow(header)
 
             # construct a list for each entry column
@@ -117,19 +121,25 @@ class Contest():
                 # and which rank the user gave that Entry
                 entry_column = []
                 for voter in entry.voters:
-                    voter_info_string = voter.name + ": round " \
-                        + str(voter.round_when_last_moved) + ", rank " \
-                        + str(voter.get_ranking_of_entry(entry))
+                    voter_info_string = (
+                        f"{voter.name}: round {voter.round_when_last_moved}, "
+                        f"rank {voter.get_ranking_of_entry(entry)}"
+                    )
                     entry_column.append(voter_info_string)
 
                 entry_columns.append(entry_column)
 
             # rearrange the body of the spreadsheet into a list of rows (so each list passed in as
             # an argument becomes a column in the final body)
-            body = itertools.zip_longest([voter.name for voter in self._voters_with_no_valid_votes],
-                [voter.name + ": round " + str(voter.round_when_last_moved)
-                for voter in self._voters_with_no_remaining_valid_votes],
-                *entry_columns, fillvalue="")
+            body = itertools.zip_longest(
+                [voter.name for voter in self._voters_with_no_valid_votes],
+                [
+                    f"{voter.name}: round {voter.round_when_last_moved}"
+                    for voter in self._voters_with_no_remaining_valid_votes
+                ],
+                *entry_columns,
+                fillvalue=""
+            )
             for row in body:
                 writer.writerow(row)
 
@@ -142,8 +152,7 @@ class Contest():
         Output a chart of the current votes to the console.
         """
 
-        bar_names = [len(entry.name) for entry in self.entries]
-        longest_entry_name_length = max([len(entry.name) for entry in self.entries])
+        longest_entry_name_length = max(len(entry.name) for entry in self.entries)
 
         print()
         for entry in self.entries:
@@ -163,35 +172,29 @@ class Contest():
             vote_bar = "\u25A0" * num_chars_in_vote_bar
 
             # text showing percentage of voters voting for this entry
-            percentage_text = str(round(100 * vote_fraction, 1)) + "%"
+            percentage_text = f"{round(100 * vote_fraction, 1)}%"
 
             # text showing fraction of voters voting for this entry
-            fraction_text = str(len(entry.voters)) + "/" + str(self._num_valid_voters)
+            fraction_text = f"{len(entry.voters)}/{self._num_valid_voters}"
 
             # text showing how much the count changed this round
-            if entry.num_voters_gained_in_current_round >= 0:
-                change_text_sign = "+"
-            else:
-                change_text_sign = ""
-            change_text = change_text_sign + str(entry.num_voters_gained_in_current_round) \
-                + " this round"
+            change_text_sign = "+" if entry.num_voters_gained_in_current_round >= 0 else ""
+            change_text = f"{change_text_sign}{entry.num_voters_gained_in_current_round} this round"
 
             entry_output = status_indicator.ljust(6)
             entry_output += entry.name.ljust(longest_entry_name_length + 2)
-            entry_output += vote_bar + " " + percentage_text
-            entry_output += " (" + fraction_text
-            entry_output += "; " + change_text + ")"
+            entry_output += f"{vote_bar} {percentage_text} ({fraction_text}; {change_text})"
             print(entry_output)
 
         print()
 
         # print info about unused voters
-        print(Contest.INVALID_VOTER_COLUMN_NAME + ": " \
-            + str(len(self._voters_with_no_valid_votes)))
-        print(Contest.ELIMINATED_VOTER_COLUMN_NAME + ": " \
-            + str(len(self._voters_with_no_remaining_valid_votes)) \
-            + " (+" + str(self._num_voters_exhausted_in_current_round) + " this round)")
-        print()
+        print(f"{Contest.INVALID_VOTER_COLUMN_NAME}: {len(self._voters_with_no_valid_votes)}")
+        print(
+            f"{Contest.ELIMINATED_VOTER_COLUMN_NAME}: "
+            f"{len(self._voters_with_no_remaining_valid_votes)}"
+            f" (+{self._num_voters_exhausted_in_current_round}) this round"
+        )
 
 
     def _allocate_voters(self, voters_to_allocate):
@@ -199,6 +202,7 @@ class Contest():
         Allocate the given Voters to their first-choice entry.
         If they don't have a first choice, add them to self._voters_with_no_valid_votes.
         """
+
         for voter in voters_to_allocate:
             # prepare voter to iterate through their valid votes
             iter(voter)
@@ -234,8 +238,10 @@ class Contest():
 
         # for bookkeeping purposes, remove all the Voters from the old Entry
         # NOTE not the most efficient but doesn't really need to be
-        current_entry.voters = [voter for voter in current_entry.voters
-            if voter not in voters_to_reallocate]
+        current_entry.voters = [
+            voter for voter in current_entry.voters
+            if voter not in voters_to_reallocate
+        ]
 
         current_entry.num_voters_gained_in_current_round -= len(voters_to_reallocate)
 
@@ -283,8 +289,10 @@ class Contest():
             self._winners.append(winner)
             winner.has_won = True
             if self.verbose:
-                print("* " + winner.name + " won (earned " + str(len(winner.voters)) \
-                    + " votes, needed " + str(self._min_num_voters_to_win) + ")")
+                print(
+                    f"* {winner.name} won"
+                    f" (earned {len(winner.voters)} votes, needed {self._min_num_voters_to_win})"
+                )
 
 
     def _run_winner_reallocation_round(self, declared_winners_still_with_surplus):
@@ -307,11 +315,11 @@ class Contest():
 
         self._reallocate_voters(winner, surplus_voters)
 
-
         if self.verbose:
-            print("* only " + str(len(self._winners)) + "/" + str(self._num_winners) \
-                + " winners have been found, so winner " + winner.name \
-                + " reallocated its " + str(num_surplus_voters) + " surplus votes")
+            print(
+                f"* only {len(self._winners)}/{self._num_winners} winners have been found,"
+                f" so winner {winner.name} reallocated its {num_surplus_voters} surplus votes"
+            )
 
 
     def _run_elimination_round(self):
@@ -329,23 +337,30 @@ class Contest():
         self._num_voters_exhausted_in_current_round = 0
 
         # pick a loser at random out of all the bottom vote-getters
-        num_voters_for_bottom_entry_still_in_race = min([len(entry.voters)
-            for entry in self._entries_still_in_race])
-        bottom_entries_still_in_race = [entry for entry in self._entries_still_in_race
-            if len(entry.voters) == num_voters_for_bottom_entry_still_in_race]
+        num_voters_for_bottom_entry_still_in_race = min(
+            len(entry.voters) for entry in self._entries_still_in_race
+        )
+        bottom_entries_still_in_race = [
+            entry for entry in self._entries_still_in_race
+            if len(entry.voters) == num_voters_for_bottom_entry_still_in_race
+        ]
         loser = random.choice(bottom_entries_still_in_race)
 
         if self.verbose:
-            print("* " + loser.name + " was eliminated as it had the fewest votes (" \
-                + str(num_voters_for_bottom_entry_still_in_race) + ")")
+            print(
+                f"* {loser.name} was eliminated"
+                f" as it had the fewest votes ({num_voters_for_bottom_entry_still_in_race})"
+            )
 
         self._entries_still_in_race.remove(loser)
         loser.has_lost = True
         self._reallocate_voters(loser, loser.voters)
 
         if self.verbose:
-            print("* " + loser.name + " reallocated its " \
-            + str(num_voters_for_bottom_entry_still_in_race) + " votes")
+            print(
+                f"* {loser.name} reallocated its"
+                f" {num_voters_for_bottom_entry_still_in_race} votes"
+            )
 
 
     def get_winners(self, num_winners, output_file_name_prefix):
@@ -359,9 +374,11 @@ class Contest():
         """
 
         if num_winners >= len(self.entries):
-            raise ValueError("A Contest must have fewer winners then entries. " \
-                + "This Contest seeks to produce " + str(num_winners) + " winners " \
-                + "but has only " + str(len(self.entries)) + " entries.")
+            raise ValueError(
+                "A Contest must have fewer winners then entries."
+                f" This Contest seeks to produce {num_winners} winners"
+                f" but has only {len(self.entries)} entries."
+            )
 
         self._num_winners = num_winners
 
@@ -396,11 +413,15 @@ class Contest():
         while len(self._winners) < self._num_winners:
             self._round_number += 1
 
-            undeclared_winners = [entry for entry in self._entries_still_in_race
-                if len(entry.voters) >= self._min_num_voters_to_win and not entry.has_won]
+            undeclared_winners = [
+                entry for entry in self._entries_still_in_race
+                if len(entry.voters) >= self._min_num_voters_to_win and not entry.has_won
+            ]
 
-            declared_winners_still_with_surplus = [winner for winner in self._winners
-                if len(winner.voters) > self._min_num_voters_to_win]
+            declared_winners_still_with_surplus = [
+                winner for winner in self._winners
+                if len(winner.voters) > self._min_num_voters_to_win
+            ]
 
             if undeclared_winners:
                 # declare all new winners
@@ -427,10 +448,12 @@ class Contest():
             # (situations like this can happen if lots of Voters have exhausted their ballots)
             if len(self._entries_still_in_race) + len(self._winners) == self._num_winners:
                 if self.verbose:
-                    print("* because there are " + str(len(self._entries_still_in_race)) \
-                        + " entries left in the race and there are still " \
-                        + str(self._num_winners - len(self._winners)) \
-                        + " winners left to find,\nthe remaining entries are crowned as winners")
+                    print(
+                        f"* because there are {len(self._entries_still_in_race)} entries left"
+                        f" in the race and there are still {self._num_winners - len(self._winners)}"
+                        " winners left to find,\nthe remaining entries are crowned as winners"
+                    )
+
                 for entry_still_in_race in self._entries_still_in_race:
                     self._winners.append(entry_still_in_race)
                     entry_still_in_race.has_won = True
@@ -438,7 +461,9 @@ class Contest():
 
         if self.verbose:
             print()
-            print("* all " + str(len(self._winners)) + "/" + str(self._num_winners) \
-                + " winners have been found, so the contest is over")
-            print("WINNERS: " + str([winner.name for winner in self._winners]))
+            print(
+                f"* all {len(self._winners)}/{self._num_winners} winners have been found,"
+                f" so the contest is over"
+            )
+            print(f"WINNERS: {[winner.name for winner in self._winners]}")
         return self._winners

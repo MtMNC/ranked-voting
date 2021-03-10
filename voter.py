@@ -56,8 +56,10 @@ class Voter():
         """
 
         # only iterate over those ranks that were assigned to exactly 1 entry
-        self._valid_votes = iter([entries_with_given_ranking[0] for entries_with_given_ranking
-            in self._votes_by_ranking if len(entries_with_given_ranking) == 1])
+        self._valid_votes = iter(
+            entries_with_given_ranking[0] for entries_with_given_ranking in self._votes_by_ranking
+            if len(entries_with_given_ranking) == 1
+        )
         return self
 
 
