@@ -4,8 +4,8 @@ import requests
 import time
 
 # In Discourse, voters.json takes in a poll and returns a list of users who voted for each option in
-# that poll. It returns those users in batches of size POLL_API_MAX_USER_LIMIT.
-# So, if some poll option received POLL_API_MAX_USER_LIMIT*3 votes, then you would have to query
+# that poll. It returns those users in batches of size NUM_VOTES_PER_API_REQUEST.
+# So, if some poll option received NUM_VOTES_PER_API_REQUEST*3 votes, then you would have to query
 # voters.json 3 times.
 # See https://github.com/discourse/discourse/blob/e0d9232259f6fb0f76bca471c4626178665ca24a/plugins/poll/plugin.rb#L166
 NUM_VOTES_PER_API_REQUEST = 50
@@ -79,13 +79,13 @@ def create_voter_dictionary(post, api_headers, verbose=True):
         for option in poll["options"]:
             entry_names_keyed_by_id[option["id"]] = option["html"]
 
-        # Grab the users who voted for each option, in batches of size POLL_API_MAX_USER_LIMIT
+        # Grab the users who voted for each option, in batches of size NUM_VOTES_PER_API_REQUEST
         # at a time (that's the upper limit batch size enforced by the API).
 
         # the most votes that any of the poll's options received
         max_num_votes_to_collect = max(option["votes"] for option in poll["options"])
         # the amount of API requests it takes to gather max_num_votes_to_collect votes in batches of
-        # size POLL_API_MAX_USER_LIMIT
+        # size NUM_VOTES_PER_API_REQUEST
         num_api_requests = math.ceil(max_num_votes_to_collect / NUM_VOTES_PER_API_REQUEST)
 
         if verbose:
