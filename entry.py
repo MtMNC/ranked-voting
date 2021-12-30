@@ -1,18 +1,17 @@
 class Entry:
     """
-    An Entry into a Contest has a name and a group of Voters who voted for it.
+    An Entry into a Contest has a name and a list of Votes cast for it.
+    Its current value in the Contest is given by sum of those Votes' values.
     """
 
 
     def __init__(self, name):
         self.name = name
-        self.voters = []
-        # still_in_race is False once the entry has removed from the polls (when it has either
-        # gotten enough wins to guarantee a win, or when it has been eliminated since it's in last
-        # place)
+        self.votes = []
         self.has_won = False
         self.has_lost = False
-        self.num_voters_gained_in_current_round = 0
+        self.value = 0
+        self.value_gained_in_current_round = 0
 
 
     @property
