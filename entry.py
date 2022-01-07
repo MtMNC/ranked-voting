@@ -10,17 +10,11 @@ class Entry:
         # still_in_race is False once the entry has removed from the polls (when it has either
         # gotten enough wins to guarantee a win, or when it has been eliminated since it's in last
         # place)
-        self.has_won = False
-        self.has_lost = False
+        self.still_in_race = True
         self.num_instant_runoff_voters_gained_in_current_round = 0
 
         # the Entries still in the race that this Entry would beat in a 1v1 match
         self.remaining_beatable_1v1_match_opponents = set()
-
-
-    @property
-    def still_in_race(self):
-        return not (self.has_won or self.has_lost)
 
 
     @property
