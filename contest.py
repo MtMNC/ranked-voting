@@ -11,7 +11,7 @@ class Contest():
     """
 
 
-    # how wide in characters the vote bars printed by _print_chart_to_console should be
+    # how wide in characters the vote bars printed by _print_instant_runoff_chart_to_console should be
     # if the bar represents 100%
     NUM_CHARS_IN_FULL_VOTE_BAR = 100
     # how wide in characters the text in _print_round_name should be
@@ -19,7 +19,7 @@ class Contest():
     # title of the spreadsheet column containing Voters who didn't cast any valid votes
     INVALID_VOTER_COLUMN_NAME = "voters who didn't cast any valid votes"
     # title of the spreadsheet column containing Voters whose preferred entries can't receive votes
-    ELIMINATED_VOTER_COLUMN_NAME = "voters whose valid preferences have all won or been eliminated"
+    ELIMINATED_VOTER_COLUMN_NAME = "voters whose valid preferences have all been eliminated"
 
     # title of the spreadsheet column containing the Voters in a 1v1 match
     ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME = "voter"
@@ -154,17 +154,15 @@ class Contest():
     #         print(" done.")
 
 
-    # def _print_chart_to_console(self):
+    # def _print_instant_runoff_chart_to_console(self):
     #     """
-    #     Output a chart of the current votes to the console.
+    #     Output a chart of the current instant runoff votes to the console.
     #     """
 
     #     longest_entry_name_length = max(len(entry.name) for entry in self.entries)
 
     #     print()
     #     for entry in self.entries:
-    #         # once entry has won or lost, we never actually removed its Voters (there's no need to)
-    #         # so len(entry.voters) won't actually reflect entry's true number of Voters
     #         if entry.has_won:
     #             status_indicator = "WON"
     #         elif entry.has_lost:
@@ -172,7 +170,7 @@ class Contest():
     #         else:
     #             status_indicator = ""
 
-    #         vote_fraction = len(entry.voters) / self._num_valid_voters
+    #         vote_fraction = len(entry.instant_runoff_voters) / len(self._voters_with_valid_votes)
 
     #         # bar in chart showing vote count
     #         num_chars_in_vote_bar = round(Contest.NUM_CHARS_IN_FULL_VOTE_BAR * vote_fraction)
@@ -182,11 +180,11 @@ class Contest():
     #         percentage_text = f"{round(100 * vote_fraction, 1)}%"
 
     #         # text showing fraction of voters voting for this entry
-    #         fraction_text = f"{len(entry.voters)}/{self._num_valid_voters}"
+    #         fraction_text = f"{len(entry.instant_runoff_voters)}/{len(self._voters_with_valid_votes)}"
 
     #         # text showing how much the count changed this round
-    #         change_text_sign = "+" if entry.num_voters_gained_in_current_round >= 0 else ""
-    #         change_text = f"{change_text_sign}{entry.num_voters_gained_in_current_round} this round"
+    #         change_text_sign = "+" if entry.num_instant_runoff_voters_gained_in_current_round >= 0 else ""
+    #         change_text = f"{change_text_sign}{entry.num_instant_runoff_voters_gained_in_current_round} this round"
 
     #         entry_output = status_indicator.ljust(6)
     #         entry_output += entry.name.ljust(longest_entry_name_length + 2)
@@ -200,29 +198,8 @@ class Contest():
     #     print(
     #         f"{Contest.ELIMINATED_VOTER_COLUMN_NAME}: "
     #         f"{len(self._voters_with_no_remaining_valid_votes)}"
-    #         f" (+{self._num_voters_exhausted_in_current_round}) this round"
+    #         f" (+{self._num_instant_runoff_voters_exhausted_in_current_round}) this round"
     #     )
-
-
-    # def _allocate_voters(self, voters_to_allocate):
-    #     """
-    #     Allocate the given Voters to their first-choice entry.
-    #     If they don't have a first choice, add them to self._voters_with_no_valid_votes.
-    #     """
-
-    #     for voter in voters_to_allocate:
-    #         # prepare voter to iterate through their valid votes
-    #         iter(voter)
-
-    #         favorite_entry = next(voter)
-    #         if favorite_entry is None:
-    #             # the voter cast no valid votes
-    #             self._voters_with_no_valid_votes.append(voter)
-    #         else:
-    #             favorite_entry.voters.append(voter)
-    #             favorite_entry.num_voters_gained_in_current_round += 1
-
-    #         voter.round_when_last_moved = self._round_number
 
 
     # def _reallocate_voters(self, current_entry, voters_to_reallocate):
@@ -236,45 +213,47 @@ class Contest():
     #         if next_favorite_entry is None:
     #             # the voter cast no valid votes
     #             self._voters_with_no_remaining_valid_votes.append(voter)
-    #             self._num_voters_exhausted_in_current_round += 1
+    #             self._num_instant_runoff_voters_exhausted_in_current_round += 1
     #         else:
-    #             next_favorite_entry.voters.append(voter)
-    #             next_favorite_entry.num_voters_gained_in_current_round += 1
+    #             next_favorite_entry.instant_runoff_voters.append(voter)
+    #             next_favorite_entry.num_instant_runoff_voters_gained_in_current_round += 1
 
     #         voter.round_when_last_moved = self._round_number
 
     #     # for bookkeeping purposes, remove all the Voters from the old Entry
     #     # NOTE not the most efficient but doesn't really need to be
-    #     current_entry.voters = [
+    #     current_entry.instant_runoff_voters = [
     #         voter for voter in current_entry.voters
     #         if voter not in voters_to_reallocate
     #     ]
 
-    #     current_entry.num_voters_gained_in_current_round -= len(voters_to_reallocate)
+    #     current_entry.num_instant_runoff_voters_gained_in_current_round -= len(voters_to_reallocate)
 
 
-    # def _run_first_round(self):
-    #     """
-    #     Run the first round of the contest. In this round, everybody votes for their first choice.
-    #     """
+    def _prepare_instant_runoff(self):
+        """
+        Pre-process and store Voter data to prepare for the first round of instant runoff voting.
+        """
 
-    #     if self.verbose:
-    #         self._print_round_name()
+        # Voters who did and did not cast valid votes
+        self._voters_with_valid_votes = []
+        self._voters_with_no_valid_votes = []
+        for voter in self.voters:
+            if voter.cast_valid_vote:
+                self._voters_with_valid_votes.append(voter)
+                # prepare Voter to iterate through their valid votes in future rounds
+                iter(voter)
+            else:
+                self._voters_with_no_valid_votes.append(voter)
 
-    #     # entries have not yet gained any votes this round
-    #     for entry in self.entries:
-    #         entry.num_voters_gained_in_current_round = 0
-    #     self._num_voters_exhausted_in_current_round = 0
+        # Voters who should vote for their favorite remaining Entry in the next round;
+        # in the first round, all eligible voters should vote for their favorite remaining Entry
+        self._voters_to_reallocate = self._voters_with_valid_votes.copy()
+        # Voters who only cast valid votes for Entries that have been eliminated
+        self._voters_with_no_remaining_valid_votes = []
 
-    #     self._allocate_voters(self.voters)
-
-    #     # all Entries are still in the race; even if an Entry got no votes, we say it is still in,
-    #     # and we'll just remove it in a later round
-    #     for entry in self.entries:
-    #         self._entries_still_in_race.append(entry)
-
-    #     if self.verbose:
-    #         print("* all voters voted for their top choice")
+        # the amount of Voters who have had all of their Entries eliminated during the current round
+        self._num_instant_runoff_voters_exhausted_in_current_round = 0
 
 
     # def _run_winner_declaration_round(self, undeclared_winners):
@@ -288,8 +267,8 @@ class Contest():
 
     #     # entries have not yet gained any votes this round
     #     for entry in self.entries:
-    #         entry.num_voters_gained_in_current_round = 0
-    #     self._num_voters_exhausted_in_current_round = 0
+    #         entry.num_instant_runoff_voters_gained_in_current_round = 0
+    #     self._num_instant_runoff_voters_exhausted_in_current_round = 0
 
     #     for winner in undeclared_winners:
     #         self._entries_still_in_race.remove(winner)
@@ -313,8 +292,8 @@ class Contest():
 
     #     # entries have not yet gained any votes this round
     #     for entry in self.entries:
-    #         entry.num_voters_gained_in_current_round = 0
-    #     self._num_voters_exhausted_in_current_round = 0
+    #         entry.num_instant_runoff_voters_gained_in_current_round = 0
+    #     self._num_instant_runoff_voters_exhausted_in_current_round = 0
 
     #     winner = random.choice(declared_winners_still_with_surplus)
     #     num_surplus_voters = len(winner.voters) - self._min_num_voters_to_win
@@ -340,8 +319,8 @@ class Contest():
 
     #     # entries have not yet gained any votes this round
     #     for entry in self.entries:
-    #         entry.num_voters_gained_in_current_round = 0
-    #     self._num_voters_exhausted_in_current_round = 0
+    #         entry.num_instant_runoff_voters_gained_in_current_round = 0
+    #     self._num_instant_runoff_voters_exhausted_in_current_round = 0
 
     #     # pick a loser at random out of all the bottom vote-getters
     #     num_voters_for_bottom_entry_still_in_race = min(
@@ -487,14 +466,14 @@ class Contest():
         input_file_name = f"{output_file_name_prefix}-round{self._round_number}-instant-runoff.csv"
 
         if self.verbose:
-            print(f"Writing round {self._round_number} vote data to {input_file_name}...",
+            print(f"Writing round {self._round_number} instant runoff data to {input_file_name}...",
                 end="", flush=True)
 
         with open(input_file_name, "w", newline="") as spreadsheet:
             writer = csv.writer(spreadsheet, delimiter=",")
 
             entries_header = [
-                f'{entry.name} ({len(entry.voters)} votes, Borda count {entry.borda_count})'
+                f'{entry.name} ({len(entry.instant_runoff_voters)} votes, Borda count {entry.borda_count})'
                 for entry in self.entries
             ]
 
@@ -511,7 +490,7 @@ class Contest():
                 # each column is filled with data on the user that voted for that Entry
                 # and which rank the user gave that Entry
                 entry_column = []
-                for voter in entry.voters:
+                for voter in entry.instant_runoff_voters:
                     voter_info_string = (
                         f"{voter.name}: round {voter.round_when_last_moved}, "
                         f"rank {voter.get_ranking_of_entry(entry)}, "
@@ -620,23 +599,18 @@ class Contest():
             )
 
         self._num_winners = num_winners
-
-        # users who cast no valid votes
-        self._voters_with_no_valid_votes = []
-        # users who cast valid votes, but only for Entries that have been eliminated already
-        self._voters_with_no_remaining_valid_votes = []
-        # the amount of Voters who have had all of their Entries eliminated during this round
-        self._num_voters_exhausted_in_current_round = 0
-        self._entries_still_in_race = set(self.entries)
         self._round_number = 0
+        self._entries_still_in_race = self.entries.copy()
 
-        # False once we encounter a scenario where eliminating more Entries would result in the
-        # Contest not producing enough winners.
-        can_eliminate_entries = len(self._entries_still_in_race) > self._num_winners
-
+        # perform prep work before eliminations can take place:
+        # determine the outcome of every 1v1 match, and determine each Voter's favorite Entry
         self._run_all_1v1_matches()
         self._write_all_1v1_match_votes_to_spreadsheet(output_file_name_prefix)
+        self._prepare_instant_runoff()
 
+        # eliminate Entries until we encounter a scenario where eliminating more would prevent the
+        # Contest from producing enough winners
+        can_eliminate_entries = len(self._entries_still_in_race) > self._num_winners
         while can_eliminate_entries:
             self._round_number += 1
             self._entries_eliminated_this_round = set()
@@ -645,6 +619,7 @@ class Contest():
             self._eliminate_entries_outside_dominating_set()
 
             if len(self._entries_still_in_race) == self._num_winners:
+                # all non-winners have been eliminated, so the Contest is over
                 can_eliminate_entries = False
             else:
                 # Otherwise we try to eliminate at least one candidate: the loser(s) in an
@@ -655,6 +630,8 @@ class Contest():
                 # not prevent the contest from having enough winners.)
                 borda_counts_and_last_place_entries = self._get_instant_runoff_last_place_entries()
                 self._write_instant_runoff_round_to_spreadsheet(output_file_name_prefix)
+                if self.verbose:
+                    self._print_instant_runoff_chart_to_console()
 
                 while can_eliminate_entries and borda_counts_and_last_place_entries:
                     _, last_place_entries_with_borda_count = heapq.heappop(borda_counts_and_last_place_entries)
@@ -679,7 +656,7 @@ class Contest():
 
         print(f"WINNERS: {[winner.name for winner in self._entries_still_in_race]}")
 
-        return list(self._entries_still_in_race)
+        return self._entries_still_in_race
 
 
 
@@ -707,7 +684,7 @@ class Contest():
     #     # users who cast valid votes, but only for Entries that have been eliminated already
     #     self._voters_with_no_remaining_valid_votes = []
     #     # the amount of voters who have had all of their entries eliminated during this round
-    #     self._num_voters_exhausted_in_current_round = 0
+    #     self._num_instant_runoff_voters_exhausted_in_current_round = 0
     #     self._entries_still_in_race = []
     #     self._winners = []
     #     self._round_number = 1
@@ -729,9 +706,9 @@ class Contest():
     #     self._num_valid_voters = len(self.voters) - len(self._voters_with_no_valid_votes)
     #     self._min_num_voters_to_win = math.floor(self._num_valid_voters / (self._num_winners + 1)) + 1
 
-    #     self._write_current_round_to_spreadsheet(output_file_name_prefix)
+    #     self._write_instant_runoff_round_to_spreadsheet(output_file_name_prefix)
     #     if self.verbose:
-    #         self._print_chart_to_console()
+    #         self._print_instant_runoff_chart_to_console()
 
     #     while len(self._winners) < self._num_winners:
     #         self._round_number += 1
@@ -762,9 +739,9 @@ class Contest():
     #             # remove one of the last-place entries from the race
     #             self._run_elimination_round()
 
-    #         self._write_current_round_to_spreadsheet(output_file_name_prefix)
+    #         self._write_instant_runoff_round_to_spreadsheet(output_file_name_prefix)
     #         if self.verbose:
-    #             self._print_chart_to_console()
+    #             self._print_instant_runoff_chart_to_console()
 
     #         # special case: if we still have to crown, say, 10 winners and there are only
     #         # 10 Entries left, then those 10 Entries are the winners
