@@ -563,13 +563,124 @@ class Contest():
         entry.instant_runoff_voters = []
 
 
+    def _set_is_dominating(self, inside_entries, outside_entries):
+        """
+        Given two lists of Entries still in the race, one representing a possible dominating set
+        and one representing the elements not in the set,
+        Return True if the possible dominating set is in fact dominating and False otherwise.
+
+        The set is dominating if it is non-empty and has a special property:
+        if you take two Entries, one inside the set and one outside,
+        then the one inside the set would win in a 1v1 match.
+        """
+
+        if not inside_entries:
+            if self.verbose:
+                print(f" result {inside_entries} is not dominating because dominating sets must contain at least 1 entry.")
+            return False
+
+        for inside_entry in inside_entries:
+            for outside_entry in outside_entries:
+                if outside_entry not in inside_entry.remaining_beatable_1v1_match_opponents:
+                    if self.verbose:
+                        print(f" result {[entry.name for entry in inside_entries]} is not dominating because {inside_entry.name} does not defeat {outside_entry.name}.")
+                    return False
+
+        if self.verbose:
+            print(f" result {[entry.name for entry in inside_entries]} is dominating.")
+        return True
+
+
+    def _get_sorted_entries_still_in_race(self):
+        """
+        Return the Entries still in the race, sorted from highest to lowest 1v1 win count.
+        """
+
+        return sorted(
+            self._entries_still_in_race,
+            key=lambda e: len(e.remaining_beatable_1v1_match_opponents),
+            reverse=True
+        )
+
+
+    def _print_1v1_match_summary_to_console(self):
+        """
+        Print each Entry still in the race and its 1v1 win count to the console.
+        Note that this method assumes at least one Entry remains in the race.
+        """
+
+        if self.verbose:
+            print("The following entries are still in the race:")
+            print()
+            sorted_entries = self._get_sorted_entries_still_in_race()
+            longest_entry_name_length = max(len(entry.name) for entry in self._entries_still_in_race)
+            longest_num_wins_length = len(str(len(sorted_entries[0].remaining_beatable_1v1_match_opponents)))
+            for entry in sorted_entries:
+                win_text = "win" if len(entry.remaining_beatable_1v1_match_opponents) == 1 else "wins"
+                beatable_entries_text = str([e.name for e in entry.remaining_beatable_1v1_match_opponents])[1:-1]
+                entry_text = f"{entry.name}:".ljust(longest_entry_name_length + 2)
+                entry_text += str(len(entry.remaining_beatable_1v1_match_opponents)).ljust(longest_num_wins_length)
+                entry_text += f" 1v1 {win_text}"
+                if entry.remaining_beatable_1v1_match_opponents:
+                    entry_text += f" (beats {beatable_entries_text})"
+                print(entry_text)
+            print()
+
+
     def _eliminate_entries_outside_dominating_set(self):
         """
         Of the remaining Entries, find the smallest dominating set of size at least
         self._num_winners. Eliminate all Entries not in this set from the Contest.
+
+        A dominating set is a non-empty subset of Entries still in the race with a special property:
+        if you take two Entries still in the race, one that's in the set and one that's not,
+        then the one in the set would win in a 1v1 match.
         """
 
-        raise NotImplementedError
+        # For every dominating set, there is a threshold T such that every Entry in the set has
+        # at least T wins, and every Entry outside the set has fewer than T wins.
+        # Therefore, we can construct the dominating set by adding Entries in most-to-least win
+        # order until it contains at least self._num_winners Entries and is dominating.
+        # (This procedure will terminate because eventually, the set will contain every single Entry
+        # still in the race. Then the set will be dominating because it's vacuously true
+        # that each Entry outside the set will lose to each Entry in the set.)
+
+        if self.verbose:
+            print(
+                f"Constructing the smallest dominating set of size >={self._num_winners}"
+                f" on the remaining entries...."
+            )
+            print(f"\tAdding {self._num_winners} entries with the most wins to the set...", end='')
+
+        sorted_entries = self._get_sorted_entries_still_in_race()
+        inside_entries = sorted_entries[:self._num_winners]
+        outside_entries = sorted_entries[self._num_winners:]
+
+        while not self._set_is_dominating(inside_entries, outside_entries):
+            entry = outside_entries.pop(0)
+            inside_entries.append(entry)
+
+            if self.verbose:
+                print(
+                    f"\tAdding {entry.name} "
+                    f"({len(entry.remaining_beatable_1v1_match_opponents)} wins) to the set...",
+                    end=''
+                )
+
+        # at this point, inside_entries is a dominating set of at least self._num_winners elements;
+        # remove all the other elements
+
+        for outside_entry in outside_entries:
+            self._eliminate_entry(outside_entry)
+
+        if self.verbose:
+            print(
+                f"\tThe dominating set is {[entry.name for entry in inside_entries]}"
+                f" with size {len(inside_entries)}."
+            )
+            print()
+            print("Eliminated all remaining entries outside the dominating set.")
+            print()
 
 
     def _get_instant_runoff_last_place_entries(self):
@@ -625,6 +736,7 @@ class Contest():
             self._round_number += 1
             self._entries_eliminated_this_round = set()
 
+            self._print_1v1_match_summary_to_console()
             self._write_remaining_1v1_match_summary_to_spreadsheet(output_file_name_prefix)
             self._eliminate_entries_outside_dominating_set()
 
@@ -655,13 +767,13 @@ class Contest():
         # at this point, winners have been found if possible
         if len(self._entries_still_in_race) > self._num_winners:
             print(
-                f"* {len(self._winners)}/{self._num_winners} winners have been found;"
+                f"* {len(self._entries_still_in_race)}/{self._num_winners} winners have been found;"
                 f" due to a tie, eliminating more would result in fewer than {self._num_winners}"
                 f" winners"
             )
         else:
             print(
-                f"* all {len(self._winners)}/{self._num_winners} winners have been found,"
+                f"* all {len(self._entries_still_in_race)}/{self._num_winners} winners have been found,"
                 f" so the contest is over"
             )
 
