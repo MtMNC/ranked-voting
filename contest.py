@@ -48,8 +48,11 @@ class Contest():
         """
 
         if self.verbose:
-            print(f"Populating contest with voter data from {input_file_name}...",
-                end="", flush=True)
+            print(
+                f"Populating contest with voter data from {input_file_name}...",
+                end="",
+                flush=True
+            )
 
         with open(input_file_name, "r", newline="") as spreadsheet:
             reader = csv.reader(spreadsheet, delimiter=",")
@@ -69,7 +72,6 @@ class Contest():
                 # (not column i because the leftmost column contains user info, not entry info)
                 self.entries.append(Entry(entry_name))
 
-            print()
             # construct Voters and record their votes
             for row in reader:
                 voter_name = row[0]
@@ -80,7 +82,6 @@ class Contest():
 
                 for i, ranking in enumerate(voter_rankings):
                     if ranking:
-                        print(f'{voter_name}: assign ranking {ranking} to {self.entries[i].name}')
                         # the ranks are stored in user_rankings as a list of strings, so cast them
                         # to ints for use as indexes
                         voter.rank(self.entries[i], int(ranking))
@@ -125,12 +126,12 @@ class Contest():
     #         entry_columns = []
     #         for entry in self.entries:
     #             # each column is filled with data on the user that voted for that Entry
-    #             # and which rank the user gave that Entry
+    #             # and which ranking the user gave that Entry
     #             entry_column = []
     #             for voter in entry.voters:
     #                 voter_info_string = (
     #                     f"{voter.name}: round {voter.round_when_last_moved}, "
-    #                     f"rank {voter.get_ranking_of_entry(entry)}"
+    #                     f"ranking {voter.get_ranking_of_entry(entry)}"
     #                 )
     #                 entry_column.append(voter_info_string)
 
@@ -368,7 +369,7 @@ class Contest():
             match_names_to_entries = {}
             for i, entry1 in enumerate(self.entries):
                 for entry2 in self.entries[i+1:]:
-                    match_names_to_entries[f'{entry1.name} vs. {entry2.name}'] = (entry1, entry2)
+                    match_names_to_entries[f"{entry1.name} vs. {entry2.name}"] = (entry1, entry2)
 
             header = [
                 self.ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME,
@@ -387,11 +388,11 @@ class Contest():
                     entry2_ranking = voter.get_ranking_of_entry(entry2)
 
                     if entry1_ranking < entry2_ranking:
-                        match_text = f'{entry1.name} (rankings: {entry1_ranking} vs. {entry2_ranking})'
+                        match_text = f"{entry1.name} (rankings: {entry1_ranking} vs. {entry2_ranking})"
                     elif entry2_ranking < entry1_ranking:
-                        match_text = f'{entry2.name} (rankings: {entry1_ranking} vs. {entry2_ranking})'
+                        match_text = f"{entry2.name} (rankings: {entry1_ranking} vs. {entry2_ranking})"
                     else:
-                        match_text = 'N/A'
+                        match_text = "N/A"
 
                     row[match_name] = match_text
 
@@ -422,7 +423,7 @@ class Contest():
 
         with open(output_file_name, "w", newline="") as spreadsheet:
             header = [
-                '',
+                "",
                 *[entry.name for entry in self.entries],
                 self.REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME
             ]
@@ -432,7 +433,7 @@ class Contest():
             rows = []
             for entry in self.entries:
                 row = {
-                    '': entry.name
+                    "": entry.name
                 }
 
                 for other_entry in self.entries:
@@ -473,7 +474,7 @@ class Contest():
             writer = csv.writer(spreadsheet, delimiter=",")
 
             entries_header = [
-                f'{entry.name} ({len(entry.instant_runoff_voters)} votes, Borda count {entry.borda_count})'
+                f"{entry.name} ({len(entry.instant_runoff_voters)} votes, Borda count {entry.borda_count})"
                 for entry in self.entries
             ]
 
@@ -576,14 +577,20 @@ class Contest():
 
         if not inside_entries:
             if self.verbose:
-                print(f" result {inside_entries} is not dominating because dominating sets must contain at least 1 entry.")
+                print(
+                    f" result {inside_entries} is not dominating"
+                    " because dominating sets must contain at least 1 entry."
+                )
             return False
 
         for inside_entry in inside_entries:
             for outside_entry in outside_entries:
                 if outside_entry not in inside_entry.remaining_beatable_1v1_match_opponents:
                     if self.verbose:
-                        print(f" result {[entry.name for entry in inside_entries]} is not dominating because {inside_entry.name} does not defeat {outside_entry.name}.")
+                        print(
+                            f" result {[entry.name for entry in inside_entries]} is not dominating "
+                            f"because {inside_entry.name} does not defeat {outside_entry.name}."
+                        )
                     return False
 
         if self.verbose:
@@ -650,7 +657,7 @@ class Contest():
                 f"Constructing the smallest dominating set of size >={self._num_winners}"
                 f" on the remaining entries...."
             )
-            print(f"\tAdding {self._num_winners} entries with the most wins to the set...", end='')
+            print(f"\tAdding {self._num_winners} entries with the most wins to the set...", end="")
 
         sorted_entries = self._get_sorted_entries_still_in_race()
         inside_entries = sorted_entries[:self._num_winners]
@@ -662,9 +669,9 @@ class Contest():
 
             if self.verbose:
                 print(
-                    f"\tAdding {entry.name} "
-                    f"({len(entry.remaining_beatable_1v1_match_opponents)} wins) to the set...",
-                    end=''
+                    f"\tAdding {entry.name}"
+                    f" ({len(entry.remaining_beatable_1v1_match_opponents)} wins) to the set...",
+                    end=""
                 )
 
         # at this point, inside_entries is a dominating set of at least self._num_winners elements;
@@ -678,7 +685,6 @@ class Contest():
                 f"\tThe dominating set is {[entry.name for entry in inside_entries]}"
                 f" with size {len(inside_entries)}."
             )
-            print()
             print("Eliminated all remaining entries outside the dominating set.")
             print()
 
