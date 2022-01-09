@@ -1,87 +1,30 @@
-from entry import Entry
-from voter import Voter
 import csv
 import itertools
 import math
 import random
 
-class STVContest():
+from contest import Contest
+from entry import Entry
+from voter import Voter
+
+class STVContest(Contest):
     """
     An STVContest contains Voters who have assigned rankings (numbers) to various Entries.
     It also has a desired number of winners.
     """
 
 
-    # how wide in characters the vote bars printed by _print_chart_to_console should be
+    # how wide in characters the vote bars printed by _print_instant_runoff_chart should be
     # if the bar represents 100%
     NUM_CHARS_IN_FULL_VOTE_BAR = 100
-    # how wide in characters the text in _print_round_name should be
-    NUM_CHARS_IN_ROUND = 100
-    # title of the spreadsheet column containing Voters who didn't cast any valid votes
+
+
+    # title of the spreadsheet column containing Voters who didn't cast any valid votes;
+    # also used when printing instant runoff results to console
     INVALID_VOTER_COLUMN_NAME = "voters who didn't cast any valid votes"
-    # title of the spreadsheet column containing Voters whose preferred entries can't receive votes
+    # title of the spreadsheet column containing Voters whose preferred entries can't receive votes;
+    # also used when printing instant runoff results to console
     ELIMINATED_VOTER_COLUMN_NAME = "voters who stopped as all their remaining picks left the race"
-
-
-    def __init__(self, verbose=True):
-        self.verbose = verbose
-        self.voters = []
-        self.entries = []
-
-
-    def _print_round_name(self):
-        print("#" * STVContest.NUM_CHARS_IN_ROUND)
-        print(f" ROUND {self._round_number} ".center(STVContest.NUM_CHARS_IN_ROUND, "#"))
-        print("#" * STVContest.NUM_CHARS_IN_ROUND)
-
-
-    def populate_from_spreadsheet(self, input_file_name):
-        """
-        Grab voter data from the given spreadsheet
-        (prepared by create_spreadsheet_from_voter_dictionary in create-voter-spreadsheet.py)
-        and populate the STVContest with the relevant Voters and Entries.
-        """
-
-        if self.verbose:
-            print(f"Populating contest with voter data from {input_file_name}...",
-                end="", flush=True)
-
-        with open(input_file_name, "r", newline="") as spreadsheet:
-            reader = csv.reader(spreadsheet, delimiter=",")
-
-            header = next(reader)
-            entry_names = header[1:]
-            # If there n Entries, each voter can assign at most n distinct rankings.
-            # (Really the number of Entries may be more than the number of distinct rankings.
-            # For example, a poll could ask users to vote for the top 3 Entries out of 10.
-            # It's fine to overestimate the number of distinct rankings though. It'll just lead to
-            # some wasted space in each Voter, which doesn't really matter.)
-            num_distinct_rankings = len(entry_names)
-
-            # construct Entries
-            for entry_name in entry_names:
-                # self.entries[i] contains the entry from column i+1
-                # (not column i because the leftmost column contains user info, not entry info)
-                self.entries.append(Entry(entry_name))
-
-            # construct Voters and record their votes
-            for row in reader:
-                voter_name = row[0]
-                # voter_rankings[i] contains the voter's ranking for entry self.entries[i]
-                voter_rankings = row[1:]
-
-                voter = Voter(voter_name, num_distinct_rankings)
-
-                for i, ranking in enumerate(voter_rankings):
-                    if ranking:
-                        # the ranks are stored in user_rankings as a list of strings, so cast them
-                        # to ints for use as indexes
-                        voter.rank(self.entries[i], int(ranking))
-
-                self.voters.append(voter)
-
-        if self.verbose:
-            print(" done.")
 
 
     def _write_current_round_to_spreadsheet(self, output_file_name_prefix):
@@ -120,7 +63,7 @@ class STVContest():
                 # each column is filled with data on the user that voted for that Entry
                 # and which rank the user gave that Entry
                 entry_column = []
-                for voter in entry.voters:
+                for voter in entry.instant_runoff_voters:
                     voter_info_string = (
                         f"{voter.name}: round {voter.round_when_last_moved}, "
                         f"rank {voter.get_ranking_of_entry(entry)}"
@@ -157,7 +100,7 @@ class STVContest():
         print()
         for entry in self.entries:
             # once entry has won or lost, we never actually removed its Voters (there's no need to)
-            # so len(entry.voters) won't actually reflect entry's true number of Voters
+            # so len(entry.instant_runoff_voters) won't actually reflect entry's true number of Voters
             if entry.has_won:
                 status_indicator = "WON"
             elif entry.has_lost:
@@ -165,7 +108,7 @@ class STVContest():
             else:
                 status_indicator = ""
 
-            vote_fraction = len(entry.voters) / self._num_valid_voters
+            vote_fraction = len(entry.instant_runoff_voters) / self._num_valid_voters
 
             # bar in chart showing vote count
             num_chars_in_vote_bar = round(STVContest.NUM_CHARS_IN_FULL_VOTE_BAR * vote_fraction)
@@ -175,11 +118,11 @@ class STVContest():
             percentage_text = f"{round(100 * vote_fraction, 1)}%"
 
             # text showing fraction of voters voting for this entry
-            fraction_text = f"{len(entry.voters)}/{self._num_valid_voters}"
+            fraction_text = f"{len(entry.instant_runoff_voters)}/{self._num_valid_voters}"
 
             # text showing how much the count changed this round
-            change_text_sign = "+" if entry.num_voters_gained_in_current_round >= 0 else ""
-            change_text = f"{change_text_sign}{entry.num_voters_gained_in_current_round} this round"
+            change_text_sign = "+" if entry.num_voters_gained_in_current_instant_runoff_round >= 0 else ""
+            change_text = f"{change_text_sign}{entry.num_voters_gained_in_current_instant_runoff_round} this round"
 
             entry_output = status_indicator.ljust(6)
             entry_output += entry.name.ljust(longest_entry_name_length + 2)
@@ -212,8 +155,8 @@ class STVContest():
                 # the voter cast no valid votes
                 self._voters_with_no_valid_votes.append(voter)
             else:
-                favorite_entry.voters.append(voter)
-                favorite_entry.num_voters_gained_in_current_round += 1
+                favorite_entry.instant_runoff_voters.append(voter)
+                favorite_entry.num_voters_gained_in_current_instant_runoff_round += 1
 
             voter.round_when_last_moved = self._round_number
 
@@ -231,19 +174,19 @@ class STVContest():
                 self._voters_with_no_remaining_valid_votes.append(voter)
                 self._num_voters_exhausted_in_current_round += 1
             else:
-                next_favorite_entry.voters.append(voter)
-                next_favorite_entry.num_voters_gained_in_current_round += 1
+                next_favorite_entry.instant_runoff_voters.append(voter)
+                next_favorite_entry.num_voters_gained_in_current_instant_runoff_round += 1
 
             voter.round_when_last_moved = self._round_number
 
         # for bookkeeping purposes, remove all the Voters from the old Entry
         # NOTE not the most efficient but doesn't really need to be
-        current_entry.voters = [
-            voter for voter in current_entry.voters
+        current_entry.instant_runoff_voters = [
+            voter for voter in current_entry.instant_runoff_voters
             if voter not in voters_to_reallocate
         ]
 
-        current_entry.num_voters_gained_in_current_round -= len(voters_to_reallocate)
+        current_entry.num_voters_gained_in_current_instant_runoff_round -= len(voters_to_reallocate)
 
 
     def _run_first_round(self):
@@ -256,7 +199,7 @@ class STVContest():
 
         # entries have not yet gained any votes this round
         for entry in self.entries:
-            entry.num_voters_gained_in_current_round = 0
+            entry.num_voters_gained_in_current_instant_runoff_round = 0
         self._num_voters_exhausted_in_current_round = 0
 
         self._allocate_voters(self.voters)
@@ -281,7 +224,7 @@ class STVContest():
 
         # entries have not yet gained any votes this round
         for entry in self.entries:
-            entry.num_voters_gained_in_current_round = 0
+            entry.num_voters_gained_in_current_instant_runoff_round = 0
         self._num_voters_exhausted_in_current_round = 0
 
         for winner in undeclared_winners:
@@ -291,7 +234,8 @@ class STVContest():
             if self.verbose:
                 print(
                     f"* {winner.name} won"
-                    f" (earned {len(winner.voters)} votes, needed {self._min_num_voters_to_win})"
+                    f" (earned {len(winner.instant_runoff_voters)} votes,"
+                    f" needed {self._min_num_voters_to_win})"
                 )
 
 
@@ -306,12 +250,12 @@ class STVContest():
 
         # entries have not yet gained any votes this round
         for entry in self.entries:
-            entry.num_voters_gained_in_current_round = 0
+            entry.num_voters_gained_in_current_instant_runoff_round = 0
         self._num_voters_exhausted_in_current_round = 0
 
         winner = random.choice(declared_winners_still_with_surplus)
-        num_surplus_voters = len(winner.voters) - self._min_num_voters_to_win
-        surplus_voters = random.sample(winner.voters, k=num_surplus_voters)
+        num_surplus_voters = len(winner.instant_runoff_voters) - self._min_num_voters_to_win
+        surplus_voters = random.sample(winner.instant_runoff_voters, k=num_surplus_voters)
 
         self._reallocate_voters(winner, surplus_voters)
 
@@ -333,16 +277,16 @@ class STVContest():
 
         # entries have not yet gained any votes this round
         for entry in self.entries:
-            entry.num_voters_gained_in_current_round = 0
+            entry.num_voters_gained_in_current_instant_runoff_round = 0
         self._num_voters_exhausted_in_current_round = 0
 
         # pick a loser at random out of all the bottom vote-getters
         num_voters_for_bottom_entry_still_in_race = min(
-            len(entry.voters) for entry in self._entries_still_in_race
+            len(entry.instant_runoff_voters) for entry in self._entries_still_in_race
         )
         bottom_entries_still_in_race = [
             entry for entry in self._entries_still_in_race
-            if len(entry.voters) == num_voters_for_bottom_entry_still_in_race
+            if len(entry.instant_runoff_voters) == num_voters_for_bottom_entry_still_in_race
         ]
         loser = random.choice(bottom_entries_still_in_race)
 
@@ -354,7 +298,7 @@ class STVContest():
 
         self._entries_still_in_race.remove(loser)
         loser.has_lost = True
-        self._reallocate_voters(loser, loser.voters)
+        self._reallocate_voters(loser, loser.instant_runoff_voters)
 
         if self.verbose:
             print(
@@ -415,12 +359,12 @@ class STVContest():
 
             undeclared_winners = [
                 entry for entry in self._entries_still_in_race
-                if len(entry.voters) >= self._min_num_voters_to_win and not entry.has_won
+                if len(entry.instant_runoff_voters) >= self._min_num_voters_to_win and not entry.has_won
             ]
 
             declared_winners_still_with_surplus = [
                 winner for winner in self._winners
-                if len(winner.voters) > self._min_num_voters_to_win
+                if len(winner.instant_runoff_voters) > self._min_num_voters_to_win
             ]
 
             if undeclared_winners:
