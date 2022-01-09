@@ -4,7 +4,7 @@ import csv
 import heapq
 import itertools
 
-class Contest():
+class TidemanContest():
     """
     A Contest contains Voters who have assigned rankings (numbers) to various Entries.
     It also has a desired number of winners.
@@ -42,7 +42,6 @@ class Contest():
         """
 
         if self.verbose:
-            print()
             print(
                 f"Populating contest with voter data from {input_file_name}...",
                 end="",
@@ -144,8 +143,8 @@ class Contest():
 
     def _write_remaining_1v1_match_summary_to_spreadsheet(self, output_file_name_prefix):
         """
-        Write out a summary of the Contest's remaining 1v1 matches to a spreadsheet at the path
-        {output_file_name_prefix}-round{round_number}-1v1-matches.csv
+        Write out a summary of the TidemanContest's remaining 1v1 matches to a spreadsheet at the
+        path {output_file_name_prefix}-round{round_number}-1v1-matches.csv
 
         Rows and columns correspond to an Entry still in the race.
         Each cell represents a match between the row's and column's Entries. It contains a 1
@@ -191,7 +190,7 @@ class Contest():
 
     def _write_instant_runoff_round_to_spreadsheet(self, output_file_name_prefix):
         """
-        Write out the contest's current status to a spreadsheet at the path
+        Write out the results of the last instant-runoff round to a spreadsheet at the path
         {output_file_name_prefix}-round{round_number}-instant-runoff.csv
 
         The first column contains the names of those Voters who did not provide any valid votes.
@@ -222,8 +221,8 @@ class Contest():
             ]
 
             header = [
-                Contest.INVALID_VOTER_COLUMN_NAME,
-                Contest.ELIMINATED_VOTER_COLUMN_NAME,
+                TidemanContest.INVALID_VOTER_COLUMN_NAME,
+                TidemanContest.ELIMINATED_VOTER_COLUMN_NAME,
                 *entries_header
             ]
             writer.writerow(header)
@@ -264,9 +263,9 @@ class Contest():
 
     def _print_round_name(self):
         print()
-        print("#" * Contest.NUM_CHARS_IN_DIVIDER)
-        print(f" ROUND {self._round_number} ".center(Contest.NUM_CHARS_IN_DIVIDER, "#"))
-        print("#" * Contest.NUM_CHARS_IN_DIVIDER)
+        print("#" * TidemanContest.NUM_CHARS_IN_DIVIDER)
+        print(f" ROUND {self._round_number} ".center(TidemanContest.NUM_CHARS_IN_DIVIDER, "#"))
+        print("#" * TidemanContest.NUM_CHARS_IN_DIVIDER)
 
 
     def _print_1v1_match_summary(self):
@@ -309,7 +308,7 @@ class Contest():
             vote_fraction = len(entry.instant_runoff_voters) / len(self._voters_with_valid_votes)
 
             # bar in chart showing vote count
-            num_chars_in_vote_bar = round(Contest.NUM_CHARS_IN_FULL_VOTE_BAR * vote_fraction)
+            num_chars_in_vote_bar = round(TidemanContest.NUM_CHARS_IN_FULL_VOTE_BAR * vote_fraction)
             vote_bar = "\u25A0" * num_chars_in_vote_bar
 
             # text showing percentage of Voters voting for this entry
@@ -334,9 +333,9 @@ class Contest():
         print()
 
         # print info about unused voters
-        print(f"\t{Contest.INVALID_VOTER_COLUMN_NAME}: {len(self._voters_with_no_valid_votes)}")
+        print(f"\t{TidemanContest.INVALID_VOTER_COLUMN_NAME}: {len(self._voters_with_no_valid_votes)}")
         print(
-            f"\t{Contest.ELIMINATED_VOTER_COLUMN_NAME}: "
+            f"\t{TidemanContest.ELIMINATED_VOTER_COLUMN_NAME}: "
             f"{len(self._voters_with_no_remaining_valid_votes)}"
             f" (+{self._num_instant_runoff_voters_exhausted_in_current_round} this round)"
         )
@@ -346,7 +345,7 @@ class Contest():
         """
         Simulate 1v1 matches between every Entry and store the results in the Entries.
         Specifically, e.remaining_beatable_1v1_match_opponents contains all the Entries remaining
-        in the Contest that Entry e would defeat in a 1v1 match.
+        in the TidemanContest that Entry e would defeat in a 1v1 match.
         """
 
         for i, entry1 in enumerate(self.entries):
@@ -397,7 +396,7 @@ class Contest():
 
     def _eliminate_entry(self, entry):
         """
-        Eliminate the given Entry from the Contest.
+        Eliminate the given Entry from the TidemanContest.
         """
 
         entry.still_in_race = False
@@ -466,7 +465,7 @@ class Contest():
     def _eliminate_entries_outside_dominating_set(self):
         """
         Of the remaining Entries, find the smallest dominating set of size at least
-        self._num_winners. Eliminate all Entries not in this set from the Contest.
+        self._num_winners. Eliminate all Entries not in this set from the TidemanContest.
 
         A dominating set is a non-empty subset of Entries still in the race with a special property:
         if you take two Entries still in the race, one that's in the set and one that's not,
@@ -606,7 +605,7 @@ class Contest():
         Simulate a round of instant-runoff voting in which each non-exhausted Voter supports their
         favorite remaining Entry. Eliminate the last-place Entries in order from least to greatest
         Borda count until either all have been eliminated or eliminating more would prevent the
-        Contest from having enough winners.
+        TidemanContest from having enough winners.
         """
 
         borda_counts_and_last_place_entries = self._get_instant_runoff_last_place_entries()
@@ -644,7 +643,8 @@ class Contest():
 
     def get_winners(self, num_winners, output_file_name_prefix):
         """
-        Run the Contest using the Tideman alternative method. The simulation terminates once either:
+        Run the TidemanContest using Tideman's alternative method. The simulation terminates once
+        either:
 
         * num_winners winners have won, or
         * more than num_winners winners have won, but we cannot eliminate any Entries according to
@@ -662,8 +662,8 @@ class Contest():
 
         if num_winners >= len(self.entries):
             raise ValueError(
-                "A Contest must have fewer winners then entries."
-                f" This Contest seeks to produce {num_winners} winners"
+                "A TidemanContest must have fewer winners then entries."
+                f" This TidemanContest seeks to produce {num_winners} winners"
                 f" but has only {len(self.entries)} entries."
             )
 
@@ -702,9 +702,9 @@ class Contest():
 
         if self.verbose:
             print()
-            print("#" * Contest.NUM_CHARS_IN_DIVIDER)
-            print("#" * Contest.NUM_CHARS_IN_DIVIDER)
-            print("#" * Contest.NUM_CHARS_IN_DIVIDER)
+            print("#" * TidemanContest.NUM_CHARS_IN_DIVIDER)
+            print("#" * TidemanContest.NUM_CHARS_IN_DIVIDER)
+            print("#" * TidemanContest.NUM_CHARS_IN_DIVIDER)
             print()
             if len(self._entries_still_in_race) > self._num_winners:
                 reason_contest_ended = "No entries were eliminated last round"
