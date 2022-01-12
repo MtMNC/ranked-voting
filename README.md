@@ -60,6 +60,6 @@ All of the following steps pull voting data from this spreadsheet, not from the 
 
 Once you have a voting data spreadsheet (made by `create_voter_spreadsheet.py`), you can find the contest's results.
 
-Depending on which voting system you want to use, either run `python find_contest_winners_tideman.py` or `python find_contest_winners_stv.py`. When prompted, enter the path to the voting data spreadsheet. Next enter the prefix for the spreadsheet. (After each round, the script will write the current standings into `{PREFIX}{ROUND_NUMBER}.csv`.) Finally, enter the number of desired winners.
+Depending on which voting system you want to use, either run `python find_contest_winners_tideman.py` or `python find_contest_winners_stv.py`. When prompted, enter the path to the voting data spreadsheet. Next, enter a spreadsheet prefix. (The script will use this prefix when naming any CSV files it writes.) Finally, enter the number of desired winners.
 
-The script will simulate the contest. After each round, it will print out a description of the round and a bar chart of the contest's current standings. It will also print out the voting breakdowns of each round into `{PREFIX}{ROUND_NUMBER}.csv`. Each column in the spreadsheet represents an entry. Each cell represents a voter for that column's entry and lists the voter's name, the ranking they gave the entry, and the round when they voted for the entry. When the contest ends, the script prints the winners to the console.
+The script will simulate the contest. During each round, it will print out a description of the round to the console, and it will also write CSV files containing detailed voting breakdowns for that round.

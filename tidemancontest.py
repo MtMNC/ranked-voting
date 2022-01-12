@@ -37,7 +37,7 @@ class TidemanContest(Contest):
     def _write_all_1v1_match_votes_to_spreadsheet(self, output_file_name_prefix):
         """
         Write out the contest's current status to a spreadsheet at the path
-        {output_file_name_prefix}-round{round_number}-1v1-matches.csv
+        {output_file_name_prefix}-all-1v1-match-votes.csv
 
         Each row corresponds to a Voter and each column corresponds to a 1v1 matchup.
         Each cell indicates which Entry in the given matchup the given Voter prefers, along with
@@ -92,7 +92,7 @@ class TidemanContest(Contest):
     def _write_remaining_1v1_match_summary_to_spreadsheet(self, output_file_name_prefix):
         """
         Write out a summary of the TidemanContest's remaining 1v1 matches to a spreadsheet at the
-        path {output_file_name_prefix}-round{round_number}-1v1-matches.csv
+        path {output_file_name_prefix}-round{self._round_number}-1v1-matches.csv
 
         Rows and columns correspond to an Entry still in the race.
         Each cell represents a match between the row's and column's Entries. It contains a 1
@@ -139,7 +139,7 @@ class TidemanContest(Contest):
     def _write_instant_runoff_round_to_spreadsheet(self, output_file_name_prefix):
         """
         Write out the results of the last instant-runoff round to a spreadsheet at the path
-        {output_file_name_prefix}-round{round_number}-instant-runoff.csv
+        {output_file_name_prefix}-round{self._round_number}-instant-runoff.csv
 
         The first column contains the names of those Voters who did not provide any valid votes.
         The second column contains the names of those Voters who provided valid votes, but only for
