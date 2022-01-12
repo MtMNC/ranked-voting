@@ -30,7 +30,7 @@ class STVContest(Contest):
     def _write_current_round_to_spreadsheet(self, output_file_name_prefix):
         """
         Write out the contest's current status to a spreadsheet at the path
-        {output_file_name_prefix}-round{round_number}.csv
+        {output_file_name_prefix}-round{self._round_number}.csv
 
         The first column contains the names of those Voters who did not provide any valid votes.
         The second column contains the names of those Voters who provided valid votes, but only for
@@ -41,13 +41,13 @@ class STVContest(Contest):
         which they voted for the Entry
         """
 
-        input_file_name = output_file_name_prefix + str(self._round_number) + ".csv"
+        output_file_name = f"{output_file_name_prefix}-round{self._round_number}.csv"
 
         if self.verbose:
-            print(f"Writing round {self._round_number} vote data to {input_file_name}...",
+            print(f"Writing round {self._round_number} vote data to {output_file_name}...",
                 end="", flush=True)
 
-        with open(input_file_name, "w", newline="") as spreadsheet:
+        with open(output_file_name, "w", newline="") as spreadsheet:
             writer = csv.writer(spreadsheet, delimiter=",")
 
             header = [
