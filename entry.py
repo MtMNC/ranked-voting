@@ -17,10 +17,9 @@ class Entry:
         # the Entries still in the race that this Entry would beat in a 1v1 match
         self.remaining_beatable_1v1_match_opponents = set()
 
+        # the Entry's Borda count if currently tied for last place, and None otherwise
+        self.borda_count = None
+
     @property
     def still_in_race(self):
         return not (self.has_won or self.has_lost)
-
-    @property
-    def borda_count(self):
-        return sum(voter.get_borda_count_of_entry(self) for voter in self.instant_runoff_voters)
