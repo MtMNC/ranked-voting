@@ -24,9 +24,6 @@ class Contest():
     # title of the spreadsheet column containing the Voters in a 1v1 match
     ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME = "voter"
 
-    # title of the spreadsheet column tallying each Entry's total win count in remaining 1v1 matches
-    REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME = "number of wins"
-
 
     def __init__(self, verbose=True):
         self.verbose = verbose
@@ -393,7 +390,7 @@ class Contest():
 
             header = [
                 self.ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME,
-                *[match_name for match_name in match_names_to_entries],
+                *[match_name for match_name in match_names_to_entries]
             ]
             writer = csv.DictWriter(spreadsheet, delimiter=",", fieldnames=header)
             writer.writeheader()
@@ -436,38 +433,7 @@ class Contest():
         Finally, the rightmost column tallies up the wins of each row's Entry.
         """
 
-        output_file_name = f"{output_file_name_prefix}-round{self._round_number}-1v1-matches.csv"
-
-        if self.verbose:
-            print(f"Writing current 1v1 match summary to {output_file_name}...", end="", flush=True)
-
-        with open(output_file_name, "w", newline="") as spreadsheet:
-            header = [
-                '',
-                *[entry.name for entry in self.entries],
-                self.REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME
-            ]
-            writer = csv.DictWriter(spreadsheet, delimiter=",", fieldnames=header)
-            writer.writeheader()
-
-            rows = []
-            for entry in self.entries:
-                row = {
-                    '': entry.name
-                }
-
-                for other_entry in self.entries:
-                    if other_entry in entry.remaining_defeatable_1v1_match_opponents:
-                        row[other_entry.name] = 1
-
-                row[self.REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME] = len(entry.remaining_defeatable_1v1_match_opponents)
-
-                rows.append(row)
-
-            writer.writerows(rows)
-
-        if self.verbose:
-            print(" done.")
+        raise NotImplementedError
 
 
     def _write_instant_runoff_round_to_spreadsheet(self, output_file_name_prefix):
@@ -546,23 +512,17 @@ class Contest():
         in the Contest that Entry e would defeat in a 1v1 match.
         """
 
-        for i, entry1 in enumerate(self.entries):
-            for entry2 in self.entries[i+1:]:
-                entry1_num_votes = 0
-                entry2_num_votes = 0
+        for entry1, entry2 in zip(self.entries, self.entries):
+            if entry1 == entry2:
+                continue
 
-                for voter in self.voters:
-                    entry1_ranking = voter.get_ranking_of_entry(entry1)
-                    entry2_ranking = voter.get_ranking_of_entry(entry2)
+            for voter in self.voters:
+                entry1_ranking = voter.get_ranking_of_entry(entry1)
+                entry2_ranking = voter.get_ranking_of_entry(entry2)
 
-                    if entry1_ranking < entry2_ranking:
-                        entry1_num_votes += 1
-                    elif entry2_ranking < entry1_ranking:
-                        entry2_num_votes += 1
-
-                if entry1_num_votes > entry2_num_votes:
+                if entry1_ranking < entry2_ranking:
                     entry1.remaining_defeatable_1v1_match_opponents.add(entry2)
-                elif entry2_num_votes > entry1_num_votes:
+                elif entry2_ranking < entry1_ranking:
                     entry2.remaining_defeatable_1v1_match_opponents.add(entry1)
 
 
