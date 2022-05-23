@@ -1,12 +1,10 @@
+from entry import Entry
+from voter import Voter
 import csv
 import heapq
 import itertools
 
-from contest import Contest
-from entry import Entry
-from voter import Voter
-
-class TidemanContest(Contest):
+class TidemanContest():
     """
     A Contest contains Voters who have assigned rankings (numbers) to various Entries.
     It also has a desired number of winners.
@@ -16,22 +14,76 @@ class TidemanContest(Contest):
     # how wide in characters the vote bars printed by _print_instant_runoff_chart should be
     # if the bar represents 100%
     NUM_CHARS_IN_FULL_VOTE_BAR = 100
-
-
-    # title of the spreadsheet column containing Voters who didn't cast any valid votes;
-    # also used when printing instant runoff results to console
-    INSTANT_RUNOFF_ROUND_SPREADSHEET_INVALID_VOTER_COLUMN_NAME = "voters who didn't cast any valid votes"
-    # title of the spreadsheet column containing Voters whose preferred entries can't receive votes;
-    # also used when printing instant runoff results to console
-    INSTANT_RUNOFF_ROUND_SPREADSHEET_ELIMINATED_VOTER_COLUMN_NAME = "voters whose valid preferences have all been eliminated"
-
+    # how wide in characters the text in _print_round_name should be
+    NUM_CHARS_IN_DIVIDER = 100
+    # title of the spreadsheet column containing Voters who didn't cast any valid votes
+    INVALID_VOTER_COLUMN_NAME = "voters who didn't cast any valid votes"
+    # title of the spreadsheet column containing Voters whose preferred entries can't receive votes
+    ELIMINATED_VOTER_COLUMN_NAME = "voters whose valid preferences have all been eliminated"
 
     # title of the spreadsheet column containing the Voters in a 1v1 match
     ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME = "voter"
 
-
     # title of the spreadsheet column tallying each Entry's total win count in remaining 1v1 matches
     REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME = "number of wins"
+
+
+    def __init__(self, verbose=True):
+        self.verbose = verbose
+        self.voters = []
+        self.entries = []
+
+
+    def populate_from_spreadsheet(self, input_file_name):
+        """
+        Grab voter data from the given spreadsheet
+        (prepared by create_spreadsheet_from_voter_dictionary in create-voter-spreadsheet.py)
+        and populate the Contest with the relevant Voters and Entries.
+        """
+
+        if self.verbose:
+            print(
+                f"Populating contest with voter data from {input_file_name}...",
+                end="",
+                flush=True
+            )
+
+        with open(input_file_name, "r", newline="") as spreadsheet:
+            reader = csv.reader(spreadsheet, delimiter=",")
+
+            header = next(reader)
+            entry_names = header[1:]
+            # If there n Entries, each voter can assign at most n distinct rankings.
+            # (Really the number of Entries may be more than the number of distinct rankings.
+            # For example, a poll could ask users to vote for the top 3 Entries out of 10.
+            # It's fine to overestimate the number of distinct rankings though. It'll just lead to
+            # some wasted space in each Voter, which doesn't really matter.)
+            num_distinct_rankings = len(entry_names)
+
+            # construct Entries
+            for entry_name in entry_names:
+                # self.entries[i] contains the entry from column i+1
+                # (not column i because the leftmost column contains user info, not entry info)
+                self.entries.append(Entry(entry_name))
+
+            # construct Voters and record their votes
+            for row in reader:
+                voter_name = row[0]
+                # voter_rankings[i] contains the voter's ranking for entry self.entries[i]
+                voter_rankings = row[1:]
+
+                voter = Voter(voter_name, num_distinct_rankings)
+
+                for i, ranking in enumerate(voter_rankings):
+                    if ranking:
+                        # the ranks are stored in user_rankings as a list of strings, so cast them
+                        # to ints for use as indexes
+                        voter.rank(self.entries[i], int(ranking))
+
+                self.voters.append(voter)
+
+        if self.verbose:
+            print(" done.")
 
 
     def _write_all_1v1_match_votes_to_spreadsheet(self, output_file_name_prefix):
@@ -169,8 +221,8 @@ class TidemanContest(Contest):
             ]
 
             header = [
-                TidemanContest.INSTANT_RUNOFF_ROUND_SPREADSHEET_INVALID_VOTER_COLUMN_NAME,
-                TidemanContest.INSTANT_RUNOFF_ROUND_SPREADSHEET_ELIMINATED_VOTER_COLUMN_NAME,
+                TidemanContest.INVALID_VOTER_COLUMN_NAME,
+                TidemanContest.ELIMINATED_VOTER_COLUMN_NAME,
                 *entries_header
             ]
             writer.writerow(header)
@@ -281,12 +333,9 @@ class TidemanContest(Contest):
         print()
 
         # print info about unused voters
+        print(f"\t{TidemanContest.INVALID_VOTER_COLUMN_NAME}: {len(self._voters_with_no_valid_votes)}")
         print(
-            f"\t{TidemanContest.INSTANT_RUNOFF_ROUND_SPREADSHEET_INVALID_VOTER_COLUMN_NAME}:"
-            f" {len(self._voters_with_no_valid_votes)}"
-        )
-        print(
-            f"\t{TidemanContest.INSTANT_RUNOFF_ROUND_SPREADSHEET_ELIMINATED_VOTER_COLUMN_NAME}: "
+            f"\t{TidemanContest.ELIMINATED_VOTER_COLUMN_NAME}: "
             f"{len(self._voters_with_no_remaining_valid_votes)}"
             f" (+{self._num_instant_runoff_voters_exhausted_in_current_round} this round)"
         )
@@ -350,7 +399,7 @@ class TidemanContest(Contest):
         Eliminate the given Entry from the TidemanContest.
         """
 
-        entry.has_lost = True
+        entry.still_in_race = False
         self._entries_still_in_race.remove(entry)
 
         # remove the Entry from the records of remaining 1v1 matches
@@ -588,6 +637,8 @@ class TidemanContest(Contest):
                     )
                 for entry in entries_with_borda_count:
                     self._eliminate_entry(entry)
+
+
 
 
     def get_winners(self, num_winners, output_file_name_prefix):
