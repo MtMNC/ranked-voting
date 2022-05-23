@@ -37,15 +37,6 @@ class Voter():
         self.round_when_last_moved = 0
 
 
-    @property
-    def cast_valid_vote(self):
-        """
-        True if the Voter cast at least one valid vote and False otherwise.
-        """
-
-        return bool(self._valid_votes_by_entry)
-
-
     def rank(self, entry, ranking):
         """
         Vote for (assign the given ranking to) the given Entry.
