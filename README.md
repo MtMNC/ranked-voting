@@ -1,21 +1,22 @@
-# Ranked Voting in Discourse
+# Single Transferable Vote in Discourse
 
 ## Introduction
 
-These scripts help users run ranked voting in a [Discourse forum](https://www.discourse.org) using Discourse's standard poll system. They were originally written for the Helryx contest on the [TTV Message Boards](https://board.ttvchannel.com/), but they can be generalized quite easily by finding and replacing URLs in the scripts. This README does not assume you are familiar with TTV's voting process.
+These scripts help users run ranked-choice voting in a [Discourse forum](https://www.discourse.org) using Discourse's standard poll system. They were originally written for the Helryx contest on the [TTV Message Boards](https://board.ttvchannel.com/), but they can be generalized quite easily by finding and replacing URLs in the scripts. This README does not assume you are familiar with TTV's voting process.
 
-## Poll options
+
+### Poll options
 
 Ranked choice elections can be run in many ways. These scripts help run contests using variants of the [single transferable vote](https://en.wikipedia.org/wiki/Single_transferable_vote) (STV) or [Tideman's alternative method](https://en.wikipedia.org/wiki/Tideman_alternative_method).
 
-### [Tideman's alternative method](https://en.wikipedia.org/wiki/Tideman_alternative_method)
+#### [Tideman's alternative method](https://en.wikipedia.org/wiki/Tideman_alternative_method)
 If this implementation seeks to identify $w$ winners of a contest, then it will identify the winners as the members of the unique dominating set of size $w$. (If a candidate is inside the dominating set, then it would beat any candidate outside the set in a 1v1 match.) Therefore this method is a [Condorcet method](https://en.wikipedia.org/wiki/Condorcet_method).
 
 If a dominating set of size $w$ does not exist, then the method finds the unique smallest dominating set of size $>w$ and attempts to eliminate the last-place candidates through a round of [instant-runoff voting](https://en.wikipedia.org/wiki/Instant-runoff_voting). If this process still results in more than $w$ winners, then a new dominating set is found on the remaining candidates, and the process repeats. The method terminates when either $w$ entries remain or no more entries can be eliminated.
 
 Variants of Tideman's alternative method differ in how they handle ties for last place during an instant-runoff round. This implementation sorts the last-place entries by their [Borda counts](https://en.wikipedia.org/wiki/Borda_count). It first eliminates all candidates with the lowest Borda count, followed by all candidates with the second-lowest Borda count, etc. If, at any point, removing all candidates with the same Borda count would result in fewer than $w$ winners, then they are not eliminated, a new dominating set is found on the remaining candidates, and the process repeats.
 
-### [Single transferable vote](https://en.wikipedia.org/wiki/Single_transferable_vote)
+#### [Single transferable vote](https://en.wikipedia.org/wiki/Single_transferable_vote)
 Because this implementation of STV uses the [Droop quota](https://en.wikipedia.org/wiki/Counting_single_transferable_votes#Droop_quota) to determine its winner, it is an extension of [instant-runoff voting](https://en.wikipedia.org/wiki/Instant-runoff_voting) (IRV). In contests with one winner, this STV implementation behaves identically to IRV. Unlike IRV, STV can also handle contests with multiple winners.
 
 There are many variants of STV. Here are the details of this specific implementation.
