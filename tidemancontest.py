@@ -494,26 +494,6 @@ class TidemanContest(Contest):
         self._voters_to_reallocate = []
 
 
-    def _update_borda_counts(self, last_place_entries):
-        """
-        Set all of the given last place Entries' Borda counts to reflect a simulated Contest in
-        which every valid Voter backs their favorite Entry in last_place_entries.
-        Set the Borda counts of all other remaining Entries to None.
-        """
-
-        for entry in self._entries_still_in_race:
-            entry.borda_count = None
-
-        for last_place_entry in last_place_entries:
-            last_place_entry.borda_count = 0
-
-        for voter in self._voters_with_valid_votes:
-            entry_to_voter_borda_count = voter.get_borda_counts_of_entries(last_place_entries)
-            for last_place_entry, borda_count in entry_to_voter_borda_count.items():
-                last_place_entry.borda_count += borda_count
-
-
-
     def _get_instant_runoff_last_place_entries(self):
         """
         Simulate a round of instant-runoff voting in which each non-exhausted Voter supports their
@@ -555,8 +535,6 @@ class TidemanContest(Contest):
                 f" ({num_voters_for_last_place_entries} votes):"
                 f" {[entry.name for entry in last_place_entries]}."
             )
-
-        self._update_borda_counts(last_place_entries)
 
         # last_place_entries_by_borda_count[borda_count] contains a list of the last-place entries
         # with the given borda count

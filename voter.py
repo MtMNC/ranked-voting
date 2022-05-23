@@ -113,40 +113,6 @@ class Voter():
 
         return 0
 
-    def get_borda_counts_of_entries(self, entries):
-        """
-        Return a list mapping each Entry in entries to its valid Borda count in a hypothetical
-        contest only featuring the given Entries. Specifically, entry_to_borda_count[e] contains the
-        Borda count for Entry e in that hypothetical contest.
-        """
-
-        entry_to_borda_count = {}
-
-        # an Entry's Borda count is the number of entries it would outperform in the hypothetical
-        # contest;
-        # note that since every ranking is unique, the only Entries that will have non-unique Borda
-        # counts are the unranked entries
-
-        # unranked entries are preferred to exactly 0 entries
-        unranked_entries = [e for e in entries if e not in self._valid_votes_by_entry]
-        for unranked_entry in unranked_entries:
-            entry_to_borda_count[unranked_entry] = 0
-
-
-        # worse-ranked Entries (with higher-number rankings) outperform fewer Entries and so have
-        # lower Borda counts
-        ranked_entries_worst_to_best = sorted(
-            [e for e in entries if e in self._valid_votes_by_entry],
-            key=lambda e: self._valid_votes_by_entry[e],
-            reverse=True
-        )
-        num_entries_outperformed = len(unranked_entries)
-        for ranked_entry in ranked_entries_worst_to_best:
-            entry_to_borda_count[ranked_entry] = num_entries_outperformed
-            num_entries_outperformed += 1
-
-        return entry_to_borda_count
-
 
     def __iter__(self):
         """
