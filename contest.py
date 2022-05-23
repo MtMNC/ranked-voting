@@ -550,17 +550,7 @@ class Contest():
         Eliminate the given Entry from the Contest.
         """
 
-        entry.still_in_race = False
-        self._entries_still_in_race.remove(entry)
-
-        # remove the Entry from the records of remaining 1v1 matches
-        for other_entry in self.entries:
-            other_entry.remaining_beatable_1v1_match_opponents.discard(entry)
-
-        # all Voters currently supporting the Entry as their favorite should now support their
-        # next-favorite remaining Entry during the next instant-runoff round
-        self._voters_to_reallocate += entry.instant_runoff_voters
-        entry.instant_runoff_voters = []
+        raise NotImplementedError
 
 
     def _eliminate_entries_outside_dominating_set(self):
@@ -613,7 +603,7 @@ class Contest():
         self._entries_still_in_race = self.entries.copy()
 
         # perform prep work before eliminations can take place:
-        # determine the outcome of every 1v1 match, and prepare for instant-runoff voting
+        # determine the outcome of every 1v1 match, and determine each Voter's favorite Entry
         self._run_all_1v1_matches()
         self._write_all_1v1_match_votes_to_spreadsheet(output_file_name_prefix)
         self._prepare_instant_runoff()
@@ -632,11 +622,10 @@ class Contest():
                 # all non-winners have been eliminated, so the Contest is over
                 can_eliminate_entries = False
             else:
-                # More Entries remain than desired, so try to eliminate at least one candidate:
-                # the loser(s) in an instant-runoff round where every Voter backs their favorite
-                # remaining choice.
-                # We eliminate those last-place entries in order from least-to-greatest Borda score
-                # until doing so would prevent the contest from having enough winners.
+                # Otherwise we try to eliminate at least one candidate: the loser(s) in an
+                # instant-runoff round where every Voter backs their favorite remaining choice.
+                # We eliminate them in order from least-to-greatest Borda score until doing
+                # so would prevent the contest from having enough winners.
                 # (Most of the time, there will only be one Entry to eliminate, and doing so will
                 # not prevent the contest from having enough winners.)
                 borda_counts_and_last_place_entries = self._get_instant_runoff_last_place_entries()
