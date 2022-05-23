@@ -10,8 +10,6 @@ class Voter():
     def __init__(self, name, num_distinct_rankings):
         self.name = name
 
-        self.num_distinct_rankings = num_distinct_rankings
-
         # self._all_votes_by_ranking[r] contains a list of all Entries that the
         # Voter has assigned ranking r.
         # Note that arrays are indexed from 0, but rankings are indexed from 1.
@@ -27,7 +25,7 @@ class Voter():
         self._all_votes_by_entry = {}
 
         # self._all_votes_by_ranking[r] contains the single Entry that the Voter has assigned the
-        # valid ranking r, or None if no such Entry exists.
+        # valid ranking r, and None if no such Entry exists.
         self._valid_votes_by_ranking = [None for _ in range(num_distinct_rankings + 1)]
         # self._valid_votes_by_entry[e] contains the single valid ranking that the Voter has
         # assigned to entry e.
@@ -92,17 +90,6 @@ class Voter():
         """
 
         return self._valid_votes_by_entry.get(entry, math.inf)
-
-
-    def get_borda_count_of_entry(self, entry):
-        """
-        Return the valid Borda count of the given Entry.
-        """
-
-        if entry in self._valid_votes_by_entry:
-            return 1 + self.num_distinct_rankings - self._valid_votes_by_entry[entry]
-
-        return 0
 
 
     def __iter__(self):
