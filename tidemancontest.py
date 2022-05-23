@@ -8,7 +8,7 @@ from voter import Voter
 
 class TidemanContest(Contest):
     """
-    A Contest contains Voters who have assigned rankings (numbers) to various Entries.
+    A TidemanContest contains Voters who have assigned rankings (numbers) to various Entries.
     It also has a desired number of winners.
     """
 
