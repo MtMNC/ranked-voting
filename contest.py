@@ -531,8 +531,6 @@ class Contest():
         Eliminate the given Entry from the Contest.
         """
 
-        raise NotImplementedError
-
 
     def _eliminate_entries_outside_dominating_set(self):
         """
@@ -592,7 +590,7 @@ class Contest():
 
         # False once we encounter a scenario where eliminating more Entries would result in the
         # Contest not producing enough winners.
-        can_eliminate_entries = len(self._entries_still_in_race) > self._num_winners
+        can_eliminate_entries = self._entries_still_in_race > self._num_winners
 
         self._run_all_1v1_matches()
         self._write_all_1v1_match_votes_to_spreadsheet(output_file_name_prefix)
