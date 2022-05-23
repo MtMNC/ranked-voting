@@ -21,9 +21,6 @@ class Contest():
     # title of the spreadsheet column containing Voters whose preferred entries can't receive votes
     ELIMINATED_VOTER_COLUMN_NAME = "voters whose valid preferences have all won or been eliminated"
 
-    # title of the spreadsheet column containing the Voters in a 1v1 match
-    ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME = "voter"
-
 
     def __init__(self, verbose=True):
         self.verbose = verbose
@@ -367,7 +364,7 @@ class Contest():
     #         )
 
 
-    def _write_all_1v1_match_votes_to_spreadsheet(self, output_file_name_prefix):
+    def _write_remaining_1v1_matches_to_spreadsheet(self, output_file_name_prefix):
         """
         Write out the contest's current status to a spreadsheet at the path
         {output_file_name_prefix}-round{round_number}-1v1-matches.csv
@@ -377,69 +374,13 @@ class Contest():
         the rankings that the Voter assigned each of the two Entries.
         """
 
-        output_file_name = f"{output_file_name_prefix}-all-1v1-match-votes.csv"
-
-        if self.verbose:
-            print(f"Writing all 1v1 match vote data to {output_file_name}...", end="", flush=True)
-
-        with open(output_file_name, "w", newline="") as spreadsheet:
-            match_names_to_entries = {}
-            for i, entry1 in enumerate(self.entries):
-                for entry2 in self.entries[i+1:]:
-                    match_names_to_entries[f'{entry1.name} vs. {entry2.name}'] = (entry1, entry2)
-
-            header = [
-                self.ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME,
-                *[match_name for match_name in match_names_to_entries]
-            ]
-            writer = csv.DictWriter(spreadsheet, delimiter=",", fieldnames=header)
-            writer.writeheader()
-
-            rows = []
-            for voter in self.voters:
-                row = {
-                    self.ALL_1V1_MATCH_VOTES_SPREADSHEET_VOTER_COLUMN_NAME: voter.name
-                }
-                for match_name, (entry1, entry2) in match_names_to_entries.items():
-                    entry1_ranking = voter.get_ranking_of_entry(entry1)
-                    entry2_ranking = voter.get_ranking_of_entry(entry2)
-
-                    if entry1_ranking < entry2_ranking:
-                        match_text = f'{entry1.name} (rankings: {entry1_ranking} vs. {entry2_ranking})'
-                    elif entry2_ranking < entry1_ranking:
-                        match_text = f'{entry2.name} (rankings: {entry1_ranking} vs. {entry2_ranking})'
-                    else:
-                        match_text = 'N/A'
-
-                    row[match_name] = match_text
-
-                rows.append(row)
-
-            writer.writerows(rows)
-
-        if self.verbose:
-            print(" done.")
-
-
-    def _write_remaining_1v1_match_summary_to_spreadsheet(self, output_file_name_prefix):
-        """
-        Write out a summary of the Contest's remaining 1v1 matches to a spreadsheet at the path
-        {output_file_name_prefix}-round{round_number}-1v1-matches.csv
-
-        Rows and columns correspond to an Entry still in the race.
-        Each cell represents a match between the row's and column's Entries. It contains a 1
-        if the row's Entry would win the match.
-
-        Finally, the rightmost column tallies up the wins of each row's Entry.
-        """
-
         raise NotImplementedError
 
 
     def _write_instant_runoff_round_to_spreadsheet(self, output_file_name_prefix):
         """
         Write out the contest's current status to a spreadsheet at the path
-        {output_file_name_prefix}-round{round_number}-instant-runoff.csv
+        {output_file_name_prefix}-round{round_number}-1v1-instant-runoff.csv
 
         The first column contains the names of those Voters who did not provide any valid votes.
         The second column contains the names of those Voters who provided valid votes, but only for
@@ -450,7 +391,7 @@ class Contest():
         they gave the Entry.
         """
 
-        input_file_name = f"{output_file_name_prefix}-round{self._round_number}-instant-runoff.csv"
+        input_file_name = f"{output_file_name_prefix}-round{self._round_number}-1v1-instant-runoff.csv"
 
         if self.verbose:
             print(f"Writing round {self._round_number} vote data to {input_file_name}...",
@@ -507,23 +448,12 @@ class Contest():
 
     def _run_all_1v1_matches(self):
         """
-        Simulate 1v1 matches between every Entry and store the results in the Entries.
-        Specifically, e.remaining_defeatable_1v1_match_opponents contains all the Entries remaining
-        in the Contest that Entry e would defeat in a 1v1 match.
+        Simulate 1v1 matches between every Entry and store the results in self._all_1v1_matches.
+        Specifically, self._all_1v1_matches[entry1][entry2] contains a list of all the Voters who
+        prefer entry1 over entry2.
         """
 
-        for entry1, entry2 in zip(self.entries, self.entries):
-            if entry1 == entry2:
-                continue
-
-            for voter in self.voters:
-                entry1_ranking = voter.get_ranking_of_entry(entry1)
-                entry2_ranking = voter.get_ranking_of_entry(entry2)
-
-                if entry1_ranking < entry2_ranking:
-                    entry1.remaining_defeatable_1v1_match_opponents.add(entry2)
-                elif entry2_ranking < entry1_ranking:
-                    entry2.remaining_defeatable_1v1_match_opponents.add(entry1)
+        raise NotImplementedError
 
 
     def _eliminate_entry(self, entry):
@@ -554,18 +484,18 @@ class Contest():
 
     def get_winners(self, num_winners, output_file_name_prefix):
         """
-        Run the Contest using the Tideman alternative method. The simulation terminates once either:
+        Run the Contest using the Tideman alternative method.
+        For every round, output up to two spreadsheets:
 
-        * num_winners winners have won, or
-        * more than num_winners winners have won, but we cannot eliminate any Entries according to
-            the contest rules.
+            (1) the results of the 1v1 matchups of the current Entries,
+            (2) if needed, the results of an IRV round of voting for those Entries that survived
+                this round's 1v1 matchups.
 
-        During the simulation, output the following spreadsheets:
+        The simulation terminates once either:
 
-        * how the Voters would vote in every possible 1v1 match;
-        * for every round, a summary of the 1v1 matches involving the Entries still in the race;
-        * for every round, if needed, the results of an IRV round of voting for those Entries that
-            survived the round's 1v1 matches.
+            (1) num_winners winners have won, or
+            (2) more than num_winners winners have won, but we cannot eliminate any Entries
+                according to the contest rules.
 
         Return the Entry objects representing the winners.
         """
@@ -593,13 +523,13 @@ class Contest():
         can_eliminate_entries = self._entries_still_in_race > self._num_winners
 
         self._run_all_1v1_matches()
-        self._write_all_1v1_match_votes_to_spreadsheet(output_file_name_prefix)
 
         while can_eliminate_entries:
             self._round_number += 1
             self._entries_eliminated_this_round = set()
 
-            self._write_remaining_1v1_match_summary_to_spreadsheet(output_file_name_prefix)
+            self._write_remaining_1v1_matches_to_spreadsheet(output_file_name_prefix)
+
             self._eliminate_entries_outside_dominating_set()
 
             if len(self._entries_still_in_race) == self._num_winners:
