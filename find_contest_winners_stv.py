@@ -1,7 +1,7 @@
 from stvcontest import STVContest
 
 def main():
-    input_file_name = input("Enter the path to the voting data spreadsheet (made by create_voter_spreadsheet.py): ")
+    input_file_name = input("Enter the path to the voting data spreadsheet (made by one of the create_voter_spreadsheet scripts): ")
     contest = STVContest()
     contest.populate_from_spreadsheet(input_file_name)
     output_file_name_prefix = input("Enter the prefix that the output spreadsheets will start with: ")
