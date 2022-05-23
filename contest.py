@@ -436,10 +436,10 @@ class Contest():
                 }
 
                 for other_entry in self.entries:
-                    if other_entry in entry.remaining_beatable_1v1_match_opponents:
+                    if other_entry in entry.remaining_defeatable_1v1_match_opponents:
                         row[other_entry.name] = 1
 
-                row[self.REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME] = len(entry.remaining_beatable_1v1_match_opponents)
+                row[self.REMAINING_1V1_MATCH_SUMMARY_SPREADSHEET_NUM_WINS_COLUMN_NAME] = len(entry.remaining_defeatable_1v1_match_opponents)
 
                 rows.append(row)
 
@@ -521,7 +521,7 @@ class Contest():
     def _run_all_1v1_matches(self):
         """
         Simulate 1v1 matches between every Entry and store the results in the Entries.
-        Specifically, e.remaining_beatable_1v1_match_opponents contains all the Entries remaining
+        Specifically, e.remaining_defeatable_1v1_match_opponents contains all the Entries remaining
         in the Contest that Entry e would defeat in a 1v1 match.
         """
 
@@ -540,9 +540,9 @@ class Contest():
                         entry2_num_votes += 1
 
                 if entry1_num_votes > entry2_num_votes:
-                    entry1.remaining_beatable_1v1_match_opponents.add(entry2)
+                    entry1.remaining_defeatable_1v1_match_opponents.add(entry2)
                 elif entry2_num_votes > entry1_num_votes:
-                    entry2.remaining_beatable_1v1_match_opponents.add(entry1)
+                    entry2.remaining_defeatable_1v1_match_opponents.add(entry1)
 
 
     def _eliminate_entry(self, entry):

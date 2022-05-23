@@ -14,9 +14,6 @@ class Entry:
         self.has_lost = False
         self.num_instant_runoff_voters_gained_in_current_round = 0
 
-        # the Entries still in the race that this Entry would beat in a 1v1 match
-        self.remaining_beatable_1v1_match_opponents = set()
-
 
     @property
     def still_in_race(self):
