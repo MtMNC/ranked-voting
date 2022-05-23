@@ -193,7 +193,7 @@ class STVContest():
         print(
             f"{STVContest.ELIMINATED_VOTER_COLUMN_NAME}: "
             f"{len(self._voters_with_no_remaining_valid_votes)}"
-            f" (+{self._num_voters_exhausted_in_current_round} this round)"
+            f" (+{self._num_voters_exhausted_in_current_round}) this round"
         )
 
 
