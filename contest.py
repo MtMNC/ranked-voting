@@ -105,13 +105,13 @@ class Contest():
     #     which they voted for the Entry
     #     """
 
-    #     output_file_name = output_file_name_prefix + str(self._round_number) + ".csv"
+    #     input_file_name = output_file_name_prefix + str(self._round_number) + ".csv"
 
     #     if self.verbose:
-    #         print(f"Writing round {self._round_number} vote data to {output_file_name}...",
+    #         print(f"Writing round {self._round_number} vote data to {input_file_name}...",
     #             end="", flush=True)
 
-    #     with open(output_file_name, "w", newline="") as spreadsheet:
+    #     with open(input_file_name, "w", newline="") as spreadsheet:
     #         writer = csv.writer(spreadsheet, delimiter=",")
 
     #         header = [
@@ -463,13 +463,13 @@ class Contest():
         they gave the Entry.
         """
 
-        output_file_name = f"{output_file_name_prefix}-round{self._round_number}-instant-runoff.csv"
+        input_file_name = f"{output_file_name_prefix}-round{self._round_number}-instant-runoff.csv"
 
         if self.verbose:
-            print(f"Writing round {self._round_number} instant runoff data to {output_file_name}...",
+            print(f"Writing round {self._round_number} instant runoff data to {input_file_name}...",
                 end="", flush=True)
 
-        with open(output_file_name, "w", newline="") as spreadsheet:
+        with open(input_file_name, "w", newline="") as spreadsheet:
             writer = csv.writer(spreadsheet, delimiter=",")
 
             entries_header = [

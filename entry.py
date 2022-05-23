@@ -6,13 +6,13 @@ class Entry:
 
     def __init__(self, name):
         self.name = name
-        self.instant_runoff_voters = []
+        self.voters = []
         # still_in_race is False once the entry has removed from the polls (when it has either
         # gotten enough wins to guarantee a win, or when it has been eliminated since it's in last
         # place)
         self.has_won = False
         self.has_lost = False
-        self.num_instant_runoff_voters_gained_in_current_round = 0
+        self.num_voters_gained_in_current_round = 0
 
 
     @property
@@ -22,4 +22,4 @@ class Entry:
 
     @property
     def borda_count(self):
-        return sum(voter.get_borda_count_of_entry(self) for voter in self.instant_runoff_voters)
+        return sum(voter.get_borda_count_of_entry(self) for voter in self.voters)
