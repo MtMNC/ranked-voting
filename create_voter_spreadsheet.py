@@ -1,8 +1,7 @@
+import csv
 import math
 import requests
 import time
-
-from preprocessing import create_voter_spreadsheet
 
 # In Discourse, voters.json takes in a poll and returns a list of users who voted for each option in
 # that poll. It returns those users in batches of size NUM_VOTES_PER_API_REQUEST.
@@ -15,10 +14,8 @@ NUM_VOTES_PER_API_REQUEST = 50
 # how long (in seconds) to wait between API requests (to stay on good terms with the website)
 SECONDS_BETWEEN_API_REQUESTS = 3
 
-
 # The URL from which to request vote info from Discourse
 DISCOURSE_VOTES_LOCATION = "https://board.ttvchannel.com/polls/voters.json"
-
 
 def get_poll_data_from_topic(topic_id, api_headers, verbose=True):
     """
@@ -47,13 +44,13 @@ def get_poll_data_from_topic(topic_id, api_headers, verbose=True):
     return first_post
 
 
-def get_voter_dictionary(post, api_headers, verbose=True):
+def create_voter_dictionary(post, api_headers, verbose=True):
     """
-    Grab the voter data from all of the given poll data (produced by get_poll_data_from_topic).
+    Grab the voter data from all of the given poll data (produced by get_poll_data_from_post).
     Return the data as a dictionary of user votes keyed by username.
     Each vote is a dictionary of rankings (numbers) keyed by entry name.
-    So, the voter dictionary follows this format:
-    votes[username][entry_name] = ranking
+    So, the output follows this format:
+    output[username][entry_name] = ranking
 
     NOTE: This method assumes that each poll corresponds to a particular ranking and that entries
     are listed in the same order across all polls.
@@ -136,6 +133,39 @@ def get_voter_dictionary(post, api_headers, verbose=True):
     return votes
 
 
+def create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name, verbose=True):
+    """
+    Given poll data from get_poll_data_from_post and a voter dictionary from
+    create_spreadsheet_from_voter_dictionary,
+    construct a spreadsheet at the given path where every row is a user, every column is a contest
+    entry, and each cell is the ranking that the row's user assigned to the column's contest entry.
+    """
+
+    if verbose:
+        print(f"Writing data to {spreadsheet_file_name}...", end="", flush=True)
+
+    entry_names = [option["html"] for option in post["polls"][0]["options"]]
+
+    with open(spreadsheet_file_name, "w", newline="") as spreadsheet:
+        writer = csv.writer(spreadsheet, delimiter=",")
+
+        writer.writerow(["user"] + entry_names)
+
+        for username in votes.keys():
+            user_votes = []
+            for entry_name in entry_names:
+                if entry_name in votes[username]:
+                    # user voted in the poll; add its ranking
+                    user_votes.append(votes[username][entry_name])
+                else:
+                    user_votes.append(None)
+
+            writer.writerow([username] + user_votes)
+
+    if verbose:
+        print(" done.")
+
+
 def main():
     with open("api_credentials.txt") as token_file:
         api_key, api_username = token_file.read().split()
@@ -143,12 +173,10 @@ def main():
     api_headers = {"Api-Key": api_key, "Api_Username": api_username}
 
     topic_id = input("Enter the topic's id: ")
-    output_spreadsheet_file_name = f"raw_vote_data_topic_{topic_id}.csv"
+    spreadsheet_file_name = f"raw_vote_data_topic_{topic_id}.csv"
     post = get_poll_data_from_topic(topic_id, api_headers)
-    votes = get_voter_dictionary(post, api_headers)
-    entry_names = [option["html"] for option in post["polls"][0]["options"]]
-
-    create_voter_spreadsheet(votes, entry_names, output_spreadsheet_file_name)
+    votes = create_voter_dictionary(post, api_headers)
+    create_spreadsheet_from_voter_dictionary(post, votes, spreadsheet_file_name)
 
 
 if __name__ == "__main__":
