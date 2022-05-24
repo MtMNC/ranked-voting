@@ -6,14 +6,19 @@ class Entry:
 
     def __init__(self, name):
         self.name = name
-        self.voters = []
+        self.instant_runoff_voters = []
         # still_in_race is False once the entry has removed from the polls (when it has either
         # gotten enough wins to guarantee a win, or when it has been eliminated since it's in last
         # place)
         self.has_won = False
         self.has_lost = False
-        self.num_voters_gained_in_current_round = 0
+        self.num_instant_runoff_voters_gained_in_current_round = 0
 
+        # the Entries still in the race that this Entry would beat in a 1v1 match
+        self.remaining_beatable_1v1_match_opponents = set()
+
+        # the Entry's Borda count if currently tied for last place, and None otherwise
+        self.borda_count = None
 
     @property
     def still_in_race(self):
